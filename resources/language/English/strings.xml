@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+  <string id="30000">Video Resolution</string>
+  <string id="30001">720p</string>
+  <string id="30002">480p</string>
+  <string id="30003">360p</string>
+  <string id="30004">240p</string>
+  <string id="30021">1080p</string>
+  <string id="30005">-- Set Language --</string>
+  <string id="30006">Watch Multiple</string>
+  <string id="30007">Queueing videos...</string>
+  <string id="30008"> Problem </string>
+  <string id="30009"> None of the videos are available. </string>
+  <string id="30010">Watch All Starting Here</string>
+  <string id="30011">Add to Playlist</string>
+  <string id="30012">Display subtitles when available</string>
+  <string id="30013">-- Hidden item --</string>
+  <string id="30014">Have you already attended this year's convention?</string>
+  <string id="30015">Startup warning</string>
+  <string id="30016">Theocratic warning</string>
+  <string id="30017">This add-on is not supported by jw.org</string>
+  <string id="30018">I understand</string>
+  <string id="30019">More info</string>
+  <string id="30020">This add-on is not supported by, or affiliated with the Watchtower society in any way.
+  
+Please use the official JW Broadcasting app for your device, if available.
+Or consider buying a device that supports the JW Broadcasting or JW Library app.
+
+Since this add-on is homemade, you must choose if you are willing to trust it.
+- The add-on may not work as intended.
+- You may not get all the benefits of tv.jw.org.
+- The spiritual food could in absolute worst case be tampered with.
+  
+Please read the following Watchtower article before you make up your mind:
+w18 April page 30
+  
+You can turn off this warning in the add-on settings.</string>
+</strings>
