@@ -28,7 +28,7 @@ With all these things in mind, this add-on is intended for you technically minde
 #### Install from zip file
 This is the easiest way to install the plugin.
 
-1. Download the [ZIP](./archive/master.zip) and put it on your Kodi device
+1. Download the [ZIP](https://github.com/allejok96/plugin.video.jwb-unofficial/archive/master.zip) and put it on your Kodi device
 1. In Kodi: click on "Add-ons"
 1. Click on the little box icon in the upper left hand corner
 1. "Install from zip file"
