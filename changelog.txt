@@ -1,4 +1,4 @@
-v1.9
+v1.9.0
 - New version, new life, new plugin name, new dev
 - Git history removed, no traces of previous author, as was his request
 - Change logo to not violate trademark
