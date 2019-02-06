@@ -10,6 +10,7 @@ addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
 
 xbmcplugin.setContent(addon_handle, 'movies')
+startupmsg = xbmcplugin.getSetting(addon_handle, 'startupmsg')
 vres = xbmcplugin.getSetting(addon_handle, 'video_res')
 if vres not in ['0','1','2','3','4']: vres = '0'
 video_res = [1080,720,480,360,240][int(vres)]
@@ -114,7 +115,7 @@ def build_media_entries(file_ary):
             xbmcplugin.addDirectoryItem(handle=addon_handle, url=v['video'], listitem=li)
 
 def process_top_level():
-    if addon.getSetting('startupmsg'):
+    if startupmsg == 'true':
         d = xbmcgui.Dialog()
         if d.yesno(__language__(30016), __language__(30017), nolabel=__language__(30018), yeslabel=__language__(30019)):
             d.textviewer(__language__(30016), __language__(30020))
@@ -124,7 +125,7 @@ def process_top_level():
     categories = json.loads(cats_raw)
 
     for c in categories['categories']:
-        if len(c.get('description')) > 0:
+        if 'WebExclude' not in c.get('tags', []):
             url = build_url({'mode': c.get('key')})
             li = xbmcgui.ListItem(c.get('name'))
             xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
