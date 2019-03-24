@@ -5,4 +5,5 @@
     <setting  id="language" visible="false" type="text" default="E" />
     <setting  id="subtitles" type="bool" label="30012" default="false" />
     <setting  id="startupmsg" type="bool" label="30015" default="true" />
+    <setting  id="jwt_token" type="text" default="" label="30022" visible="false"></setting>
 </settings>

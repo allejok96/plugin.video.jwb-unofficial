@@ -5,7 +5,6 @@
   <string id="30002">480p</string>
   <string id="30003">360p</string>
   <string id="30004">240p</string>
-  <string id="30021">1080p</string>
   <string id="30005">-- Set Language --</string>
   <string id="30006">Watch Multiple</string>
   <string id="30007">Queueing videos...</string>
@@ -35,4 +34,6 @@ Please read the following Watchtower article before you make up your mind:
 w18 April page 30
   
 You can turn off this warning in the add-on settings.</string>
+  <string id="30021">1080p</string>
+  <string id="30022">-- Search --</string>
 </strings>
