@@ -1,3 +1,10 @@
+v1.10.0
+- Fix startup notice
+- Update APIs
+- Search feature
+- Featured videos
+- I'm not so good at keeping this changelog up to date, am I?
+
 v1.9.0
 - New version, new life, new plugin name, new dev
 - Git history removed, no traces of previous author, as was his request
