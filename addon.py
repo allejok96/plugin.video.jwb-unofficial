@@ -84,7 +84,7 @@ class Directory(object):
         # lsr/lss 2:1
         # pns/pnr 3:1
         c.icon = getr(data, ['images', ('sqr', 'cvr'), ('lg', 'md')])
-        c.fanart = getr(data, ['images', ('lsr', 'pnr'), ('md', 'lg')])
+        c.fanart = getr(data, ['images', ('wsr', 'lsr', 'pnr'), ('md', 'lg')])
 
         return c
 
@@ -338,15 +338,18 @@ def getr(obj, keys, default=None, level=0):
                 # More levels, go deeper
                 return getr(obj[key_try], keys, level=level + 1)
             else:
-                # No more levels, return value
+                # Last level, return value
                 return obj[key_try]
         except (TypeError, KeyError, IndexError) as e:
-            if level == 0:
-                # All childs failed
-                return default
-            else:
-                # Key did not exist, return to parent
-                raise e
+            # Could not get value, try next
+            continue
+
+    if level == 0:
+        # Everything failed, we return nicely
+        return default
+    else:
+        # No keys existed for this level, return to parent
+        raise KeyError
 
 
 def get_json(url, nofail=False):
