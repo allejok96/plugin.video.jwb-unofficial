@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon
   id="plugin.video.jwb-unofficial"
-  version="1.10.0"
+  version="1.11.0"
   name="JWB unofficial"
   provider-name="allejok96">
 
   <requires>
-    <import addon="xbmc.python" version="2.1.0" />
+    <!-- Gotham 13.x -->
+    <import addon="xbmc.addon" version="13.0.0" />
     <import addon="script.module.simplejson" version="3.3.0" />
   </requires>
 
@@ -16,16 +17,19 @@
 
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Unofficial JW Broadcasting client</summary>
-    <description lang="en">Watch and listen to content from JW Broadcasting. Consider using the official JW Broadcasting app, if available on your device. Or even just the tv.jw.org website, as this plugin is not officially supported by the Watchtower Society.</description>
-    <disclaimer lang="en">This is not an offical plugin, please do not contact jw.org for support.</disclaimer>
+    <description lang="en">Watch latest videos, play streaming channels and listen to audio recordings from JW Broadcasting.</description>
+    <disclaimer lang="en">This is not an official plugin, please do not contact jw.org for support.</disclaimer>
     <platform>all</platform>
-    <news>v1.10.0 (2019-04-21)
-    - Search feature
-    - Featured videos
-    - Fixed startup message bug</news>
+    <news>v1.11.0 (2019-09-10)
+    - Play single videos in another language
+    - Improved looks and metadata scrapping
+    - Heavy code rewriting</news>
     <assets>
       <icon>icon.png</icon>
       <fanart>fanart.jpg</fanart>
+      <screenshot>resources/screenshot-01.jpg</screenshot>
+      <screenshot>resources/screenshot-02.jpg</screenshot>
+      <screenshot>resources/screenshot-03.jpg</screenshot>
     </assets>
   </extension>
 </addon>
