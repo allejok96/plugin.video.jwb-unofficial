@@ -1,48 +1,49 @@
 Unofficial JW Broadcasting plugin for Kodi
 ==========================================
 
-*This is a fork/continuation of the "JW Broadcasting (unofficial)" add-on, as the previous author decided to take it down. I've tried to address some of his concerns.*
+*This is a fork/continuation of the older "JW Broadcasting (unofficial)" add-on for Kodi. It is not officially supported by the Watchtower Society. Do not contact jw.org for support, instead please leave an issue here on GitHub if you run into any problems.* 
 
-### This is not an official app
+## The best TV channel ever
 
-Please use the official [JW Broadcasting App](https://www.jw.org/en/online-help/jw-broadcasting/) if available on your device.
+![screenshot](https://raw.githubusercontent.com/allejok96/plugin.video.jwb-unofficial/master/resources/screenshot-01.jpg)
 
-Even consider buying a device that supports the official app. You'll get get best support and experience that way.
+Browse [JW Broadcasting](https://tv.jw.org) on your Kodi box! Watch streams, listen to sound recordings and watch the latest videos in any available language.
 
-This add-on is not officially supported by the Watchtower Society. Do not contact jw.org for support of any kind. If you feel the need for technical support, please leave an issue here on GitHub.
+The best way to watch it  is using an officially supported device with the officially supported [JW Broadcasting App](https://www.jw.org/en/online-help/jw-broadcasting/). The Watchtower Society urges people to use their official apps, instead of third-party software like Kodi add-ons ([w18 April page 30-31](https://wol.jw.org/en/wol/d/r1/lp-e/2018364)).
 
-### The risks
+## Installation
 
-Please read [w18 April page 30-31](https://wol.jw.org/en/wol/d/r1/lp-e/2018364) first.
+There are multiple ways you can install this add-on. You could use `git clone` or [Download ZIP](https://github.com/allejok96/plugin.video.jwb-unofficial/archive/master.zip) from GitHub.
 
-You have to decide if you want to take these risks:
+But the easiest way is to install it from my repo. This way you'll receive updates automatically (if I remember to upload them):
 
-* Changes made to improve tv.jw.org may break this add-on.
-* You may not get the full benefit from tv.jw.org by using this add-on.
-* You are trusting a third-party to deliver spiritual food to you.
-* This repo _could_ get hacked, you know.
-
-### Installation
-With all these things in mind, this add-on is intended for you technically minded folks, who can make that decision. For the time being I won't upload it to the main Kodi repository, so you won't receive updates automatically.
-
-#### Install from zip file
-This is the easiest way to install the plugin.
-
-1. Download the [ZIP](https://github.com/allejok96/plugin.video.jwb-unofficial/archive/master.zip) and put it on your Kodi device
+1. Download [this ZIP](https://github.com/allejok96/repository.allejok96/raw/master/downloads/repository.allejok96.zip)
 1. In Kodi: click on "Add-ons"
 1. Click on the little box icon in the upper left hand corner
 1. "Install from zip file"
 1. Browse to the directory with the zip and select it
+1. Click on "Install from repository"
+1. "allejok96's Repository > Video add-ons > JWB Unofficial > Install"
 
-#### Install from git repo
-This way makes updating easier.
+## Disclaimer
 
-In the example we choose store the git repo in your home directory. On Linux:
+The benefits of this add-on are countless, but there are some risks, as the WT article above points out:
 
-1. Go to your home dir `cd ~`
-1. Download the repo `git clone https://github.com/allejok96/plugin.video.jwb-unofficial`
-1. Create a symlink to it in the Kodi add-on directory `ln -s ~/plugin.video.jwb-unofficial ~/.kodi/addons/`
-1. In Kodi: go to Add-ons > My add-ons > Video add-ons > JWB unofficial and Enable it
+* When tv.jw.org improves, this add-on may break, misbehave or lag behind.
+* If someone hacked my repo, they could forge the spiritual food (extremely unlikely).
 
----
-*And lastly a huge thanks to the original author of this add-on, who whishes to stay anonymous.*
+But since you found this page I guess you know what you're doing.
+
+#### Why not in Kodi official repository?
+
+The original author of this add-on, who wishes to stay anonymous, decided to take it down for personal reasons. Including some of the reasons mentioned above. It really got me thinking, and I decided to play it safe, even if I would continue to develope the add-on. After all, it's not just any random video site we're talking about...
+
+So my wish is that *you* take responsibility for the installations *you* make. Chances are if you found this page, you can install a zip in Kodi. Maybe your aunt can't, but then you can help her. It's better that you be there for your aunt if something happens, than me having a 1000 aunts broken Broadcasting on my conscience.
+
+You may be of a different opinion, but please respect my personal desicion. And if you want to change something, it's open source, so go ahead and fork it. 
+
+#### Is this legal?
+
+Yes, this is concidered "proper use". The [Terms of Service](http://www.jw.org/en/terms-of-use/) allows for:
+
+> distribution of free, non-commercial applications designed to download electronic files such as EPUB, PDF, MP3, and MP4 files from public areas of jw.org.
