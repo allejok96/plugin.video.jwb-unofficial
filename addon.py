@@ -120,10 +120,19 @@ class Directory(object):
         """Create a Kodi listitem from the metadata"""
 
         li = xbmcgui.ListItem(self.title)
-        li.setPath(self.url)
-        li.setArt({'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart})
+        art = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
+        # Check if there's any art, setArt can be kinda slow
+        if max(v for v in art.values()):
+            li.setArt()
         li.setInfo('video', {'plot': self.description})
 
+        return li
+
+    def listitem_with_path(self):
+        """Return ListItem with path set, because apparently setPath() is slow"""
+
+        li = self.listitem()
+        li.setPath(self.url)
         return li
 
     def add_item_in_kodi(self):
@@ -328,13 +337,6 @@ class Media(Directory):
             action = 'RunPlugin(' + request_to_self(query) + ')'
             li.addContextMenuItems([(getstr(30006), action)])
 
-        return li
-
-    def listitem_with_path(self):
-        """Return ListItem with path set, because apparently setPath() is very slow"""
-
-        li = self.listitem()
-        li.setPath(self.url)
         return li
 
 
