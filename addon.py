@@ -119,7 +119,11 @@ class Directory(object):
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
 
-        li = xbmcgui.ListItem(self.title)
+        try:
+            # Kodi v18 feature, suppressing GUI locks will speed things up considerably
+            li = xbmcgui.ListItem(self.title, offscreen=True)
+        except TypeError:
+            li = xbmcgui.ListItem(self.title)
         art_dict = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
         # Check if there's any art, setArt can be kinda slow
         if max(v for v in art_dict.values()):
@@ -318,7 +322,12 @@ class Media(Directory):
             info_dict['date'] = time.strftime('%d.%m.%Y', self.publish_date)
             info_dict['year'] = time.strftime('%Y', self.publish_date)
 
-        li = xbmcgui.ListItem(self.title)
+        try:
+            # Kodi v18 feature, suppressing GUI locks will speed things up considerably
+            li = xbmcgui.ListItem(self.title, offscreen=True)
+        except TypeError:
+            li = xbmcgui.ListItem(self.title)
+
         li.setArt(art_dict)
         li.setInfo(self.media_type, info_dict)
 
