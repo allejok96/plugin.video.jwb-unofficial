@@ -120,10 +120,10 @@ class Directory(object):
         """Create a Kodi listitem from the metadata"""
 
         li = xbmcgui.ListItem(self.title)
-        art = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
+        art_dict = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
         # Check if there's any art, setArt can be kinda slow
-        if max(v for v in art.values()):
-            li.setArt()
+        if max(v for v in art_dict.values()):
+            li.setArt(art_dict)
         li.setInfo('video', {'plot': self.description})
 
         return li
