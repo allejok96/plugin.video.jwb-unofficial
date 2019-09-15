@@ -12,9 +12,9 @@ import xbmcgui
 import xbmc
 
 try:
-    import json
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 # Static names for valid URL queries and modes, to simplify for the IDE
 Q_MODE = 'mode'
@@ -456,6 +456,11 @@ def top_level_page():
 def sub_level_page(sub_level):
     """A sub-level page with either folders or playable media"""
 
+    # TODO: less detailed request?
+    #  For categories like VODStudio that contains subcategories with media,
+    #  all media is included in the response, which slows down the parsing a lot.
+    #  All this extra data has no function in this script. If there only was a way
+    #  to request the subcategories, but without their media...
     data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '/' + sub_level + '?&detailed=1')
     data = data['category']
 
