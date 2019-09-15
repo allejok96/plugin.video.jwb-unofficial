@@ -314,42 +314,43 @@ class Media(Directory):
         return li
 
 
-def getr(obj, keys, default=None, level=0):
+def getr(obj, keys, default=None, fail=False):
     """Recursive get function
 
     :param obj: list, dictionary or tuple
     :param keys: an iterable with indexes and keys (or tuples with indexes and keys)
     :param default: value to return if it fails'
-    :param level: int, used internally
+    :param fail: used internally
 
     Example of keys: ['colors', ('red', 'green'), 2]
     Would match: ['colors']['red'][2] or ['colors']['green'][2]
     Keys are tested in order, and the first valid value is returned
     """
+    this_level = keys[0]
+    del keys[0]
 
-    if type(keys[level]) not in (list, tuple):
-        this_level = [keys[level]]
-    else:
-        this_level = keys[level]
+    if type(this_level) != tuple:
+        this_level = (this_level,)
 
     for key_try in this_level:
         try:
-            if len(keys) - 1 > level:
+            new_obj = obj[key_try]
+            if keys:
                 # More levels, go deeper
-                return getr(obj[key_try], keys, level=level + 1)
+                return getr(new_obj, keys, fail=True)
             else:
                 # Last level, return value
-                return obj[key_try]
-        except (TypeError, KeyError, IndexError) as e:
+                return new_obj
+        except (TypeError, KeyError, IndexError):
             # Could not get value, try next
             continue
 
-    if level == 0:
-        # Everything failed, we return nicely
-        return default
-    else:
+    if fail:
         # No keys existed for this level, return to parent
         raise KeyError
+    else:
+        # Everything failed, we return nicely
+        return default
 
 
 def get_json(url, nofail=False):
