@@ -122,9 +122,8 @@ class Directory(object):
         li = xbmcgui.ListItem(self.title)
         li.setPath(self.url)
         li.setArt({'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart})
-        if isinstance(self, Directory):
-            # Only do this for Directories, as this will break music metadata
-            li.setInfo('video', {'plot': self.description})
+        li.setInfo('video', {'plot': self.description})
+
         return li
 
     def add_item_in_kodi(self):
@@ -221,11 +220,13 @@ class Media(Directory):
 
     @publish_date.setter
     def publish_date(self, value):
-        try:
-            # 2017-05-18T15:41:52.197Z
-            self.__publish_date = time.strptime(value[0:19], '%Y-%m-%dT%H:%M:%S')
-        except (ValueError, TypeError):
-            pass
+        """Value is a string like 2017-05-18T15:41:52.197Z"""
+
+        # Dates are not visible in default skin, all this does is slow down processing
+        # try: self.__publish_date = time.strptime(value[0:19], '%Y-%m-%dT%H:%M:%S')
+        # except (ValueError, TypeError): pass
+
+        pass
 
     @property
     def duration(self):
@@ -288,17 +289,30 @@ class Media(Directory):
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
 
-        li = super(Media, self).listitem()
-        li.setInfo(self.media_type, {'duration': self.duration})
-        li.setInfo(self.media_type, {'title': self.title})
-        li.setInfo(self.media_type, {'size': self.size})
+        art_dict = {
+            'icon': self.icon,
+            'poster': self.icon,
+            'fanart': self.fanart
+        }
+        info_dict = {
+            'duration': self.duration,
+            'title': self.title,
+            'size': self.size
+        }
+
         if self.media_type == 'music':
-            li.setInfo(self.media_type, {'comment': self.description})
+            info_dict['comment'] = self.description
         else:
-            li.setInfo(self.media_type, {'plot': self.description})
+            info_dict['plot'] = self.description
+
         if self.publish_date:
-            li.setInfo(self.media_type, {'date': time.strftime('%d.%m.%Y', self.publish_date)})
-            li.setInfo(self.media_type, {'year': time.strftime('%Y', self.publish_date)})
+            info_dict['date'] = time.strftime('%d.%m.%Y', self.publish_date)
+            info_dict['year'] = time.strftime('%Y', self.publish_date)
+
+        li = xbmcgui.ListItem(self.title)
+        li.setArt(art_dict)
+        li.setInfo(self.media_type, info_dict)
+
         if self.offset:
             li.setProperty('StartOffset', self.offset)
         if self.url:
@@ -314,6 +328,13 @@ class Media(Directory):
             action = 'RunPlugin(' + request_to_self(query) + ')'
             li.addContextMenuItems([(getstr(30006), action)])
 
+        return li
+
+    def listitem_with_path(self):
+        """Return ListItem with path set, because apparently setPath() is very slow"""
+
+        li = self.listitem()
+        li.setPath(self.url)
         return li
 
 
@@ -417,8 +438,12 @@ def top_level_page():
             d.add_item_in_kodi()
 
     # Get "search" translation from internet - overkill but so cool
-    data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, nofail=True)
-    search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
+    # Try cache first, to speed up loading
+    search_label = addon.getSetting('search_tr')
+    if not search_label:
+        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, nofail=True)
+        search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
+        addon.setSetting('search_tr', search_label)
     d = Directory(url=request_to_self({Q_MODE: M_SEARCH}), title=search_label, fanart=default_fanart,
                   icon='DefaultMusicSearch.png')
     d.add_item_in_kodi()
@@ -464,7 +489,7 @@ def play_stream(key):
             if offset:
                 media.offset = offset
                 offset = None
-            pl.add(media.url, media.listitem())
+            pl.add(media.url, media.listitem_with_path())
     xbmc.Player().play(pl)
 
 
@@ -510,6 +535,8 @@ def set_language(lang):
 
     addon.setSetting('language', lang)
     save_language_history(lang)
+    # Forget about the translation of "Search"
+    addon.setSetting('search_tr', '')
 
 
 def save_language_history(lang):
@@ -581,7 +608,7 @@ def resolve_media(media_key, lang=None):
     data = get_json(url)
     media = Media.parse_media(data['media'][0], censor_hidden=False)
     if media:
-        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem())
+        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
     else:
         raise RuntimeError
 
