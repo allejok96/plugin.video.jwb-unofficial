@@ -36,14 +36,14 @@ But since you found this page I guess you know what you're doing.
 
 #### Why not in Kodi official repository?
 
-The original author of this add-on, who wishes to stay anonymous, decided to take it down for personal reasons. Including some of the reasons mentioned above. It really got me thinking, and I decided to play it safe, even if I would continue to develope the add-on. After all, it's not just any random video site we're talking about...
+The original author of this add-on, who wishes to stay anonymous, decided to take it down for personal reasons. Including some of the reasons mentioned above. It really got me thinking, and I decided to play it safe, even if I would continue to develop the add-on. After all, it's not just any random video site we're talking about...
 
 So my wish is that *you* take responsibility for the installations *you* make. Chances are if you found this page, you can install a zip in Kodi. Maybe your aunt can't, but then you can help her. It's better that you be there for your aunt if something happens, than me having a 1000 aunts broken Broadcasting on my conscience.
 
-You may be of a different opinion, but please respect my personal desicion. And if you want to change something, it's open source, so go ahead and fork it. 
+You may be of a different opinion, but please respect my personal decision. And if you want to change something, it's open source, so go ahead and fork it. 
 
 #### Is this legal?
 
-Yes, this is concidered "proper use". The [Terms of Service](http://www.jw.org/en/terms-of-use/) allows for:
+Yes, this is considered "proper use". The [Terms of Service](http://www.jw.org/en/terms-of-use/) allows for:
 
 > distribution of free, non-commercial applications designed to download electronic files such as EPUB, PDF, MP3, and MP4 files from public areas of jw.org.
