@@ -619,26 +619,31 @@ def request_to_self(query):
     return sys.argv[0] + '?' + urllib.urlencode(query)
 
 
-mode = args.get(Q_MODE)
+def main():
+    mode = args.get(Q_MODE)
 
-if mode is None:
-    top_level_page()
-elif mode == M_LANGUAGES:
-    language_dialog(args.get(Q_MEDIAKEY), args.get(Q_LANGFILTER))
-elif mode == M_SET_LANG:
-    set_language(args[Q_LANGCODE])
-elif mode == M_HIDDEN:
-    hidden_media_dialog(args[Q_MEDIAKEY])
-elif mode == M_SEARCH:
-    search_page()
-elif mode == M_PLAY:
-    resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
-elif mode == M_BROWSE:
-    sub_level_page(args[Q_CATKEY])
-elif mode == M_STREAM:
-    play_stream(args[Q_STREAMKEY])
-# Backwards compatibility
-elif mode.startswith('Streaming') and mode != 'Streaming':
-    play_stream(mode)
-else:
-    sub_level_page(mode)
+    if mode is None:
+        top_level_page()
+    elif mode == M_LANGUAGES:
+        language_dialog(args.get(Q_MEDIAKEY), args.get(Q_LANGFILTER))
+    elif mode == M_SET_LANG:
+        set_language(args[Q_LANGCODE])
+    elif mode == M_HIDDEN:
+        hidden_media_dialog(args[Q_MEDIAKEY])
+    elif mode == M_SEARCH:
+        search_page()
+    elif mode == M_PLAY:
+        resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
+    elif mode == M_BROWSE:
+        sub_level_page(args[Q_CATKEY])
+    elif mode == M_STREAM:
+        play_stream(args[Q_STREAMKEY])
+    # Backwards compatibility
+    elif mode.startswith('Streaming') and mode != 'Streaming':
+        play_stream(mode)
+    else:
+        sub_level_page(mode)
+
+
+if __name__ == '__main__':
+    main()
