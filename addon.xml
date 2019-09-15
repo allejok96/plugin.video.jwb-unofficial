@@ -8,7 +8,6 @@
   <requires>
     <!-- Gotham 13.x -->
     <import addon="xbmc.addon" version="13.0.0" />
-    <import addon="script.module.simplejson" version="3.3.0" />
   </requires>
 
   <extension point="xbmc.python.pluginsource" library="addon.py">

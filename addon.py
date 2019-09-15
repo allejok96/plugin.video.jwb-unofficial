@@ -11,7 +11,10 @@ import xbmcaddon
 import xbmcgui
 import xbmc
 
-import simplejson as json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 # Static names for valid URL queries and modes, to simplify for the IDE
 Q_MODE = 'mode'
