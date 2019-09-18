@@ -12,16 +12,12 @@ import xbmcgui
 import xbmc
 from xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
 
-
-def log(msg, level=LOGDEBUG):
-    xbmc.log(addon.getAddonInfo('id') + ': ' + msg, level)
-
-
 try:
     import simplejson as json
 except ImportError:
-    log('simplejson not found, falling back to default json')
     import json
+
+    xbmc.log('plugin.video.jwb-unofficial: simplejson not found, falling back to default json')
 
 # Set to True for performance profiling
 CPROFILE = False
@@ -42,10 +38,12 @@ M_PLAY = 'play'
 M_BROWSE = 'browse'
 M_STREAM = 'stream'
 
-# To send stuff to the screen ("add-on handle")
+# To send stuff to the screen
 addon_handle = int(sys.argv[1])
 # To get settings and info
 addon = xbmcaddon.Addon()
+# For logging purpose
+addon_id = addon.getAddonInfo('id')
 # To to get translated strings
 getstr = addon.getLocalizedString
 
@@ -55,6 +53,10 @@ subtitles = addon.getSetting('subtitles') == 'true'
 language = addon.getSetting('language')
 if not language:
     language = 'E'
+
+
+def log(msg, level=LOGDEBUG):
+    xbmc.log(addon_id + ': ' + msg, level)
 
 
 class Directory(object):
