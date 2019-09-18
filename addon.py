@@ -14,9 +14,14 @@ import xbmc
 try:
     import simplejson as json
 except ImportError:
+    xbmc.log('simplejson not found, falling back to default json', xbmc.LOGDEBUG)
     import json
 
+# Performance profiling
+CPROFILE_OUTPUT_DIR = '/tmp'
+
 # Static names for valid URL queries and modes, to simplify for the IDE
+Q_CPROFILE = 'cprofile'
 Q_MODE = 'mode'
 Q_CATKEY = 'category'
 Q_LANGCODE = 'language'
@@ -120,7 +125,8 @@ class Directory(object):
         """Create a Kodi listitem from the metadata"""
 
         try:
-            # Kodi v18 feature, suppressing GUI locks will speed things up considerably
+            # offscreen is a Kodi v18 feature that speeds things up considerably
+            # But we wont't be able to change the listitem after running .addDirectoryItem()
             li = xbmcgui.ListItem(self.title, offscreen=True)
         except TypeError:
             li = xbmcgui.ListItem(self.title)
@@ -632,6 +638,8 @@ def resolve_media(media_key, lang=None):
 def request_to_self(query):
     """Return a string with an URL request to the add-on itself"""
 
+    if Q_CPROFILE in args:
+        query['cprofile'] = 'true'
     return sys.argv[0] + '?' + urllib.urlencode(query)
 
 
@@ -662,4 +670,13 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if Q_CPROFILE in args:
+        import cProfile
+
+        output = '{}/{}-{}-{}.cprof'.format(CPROFILE_OUTPUT_DIR,
+                                            time.strftime('%y%m%d%H%M%S'),
+                                            args.get(Q_MODE),
+                                            args.get(Q_CATKEY) or args.get(Q_MEDIAKEY))
+        cProfile.run('main()', output)
+    else:
+        main()
