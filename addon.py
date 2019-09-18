@@ -10,18 +10,24 @@ import xbmcplugin
 import xbmcaddon
 import xbmcgui
 import xbmc
+from xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
+
+
+def log(msg, level=LOGDEBUG):
+    xbmc.log(addon.getAddonInfo('id') + ': ' + msg, level)
+
 
 try:
     import simplejson as json
 except ImportError:
-    xbmc.log('simplejson not found, falling back to default json', xbmc.LOGDEBUG)
+    log('simplejson not found, falling back to default json')
     import json
 
-# Performance profiling
+# Set to True for performance profiling
+CPROFILE = False
 CPROFILE_OUTPUT_DIR = '/tmp'
 
 # Static names for valid URL queries and modes, to simplify for the IDE
-Q_CPROFILE = 'cprofile'
 Q_MODE = 'mode'
 Q_CATKEY = 'category'
 Q_LANGCODE = 'language'
@@ -36,21 +42,12 @@ M_PLAY = 'play'
 M_BROWSE = 'browse'
 M_STREAM = 'stream'
 
-# The awkward way Kodi passes arguments to the add-on...
-# argv[0] is the plugin path
-# argv[1] is the add-on handle, whatever that means, unique to this instance
+# To send stuff to the screen ("add-on handle")
 addon_handle = int(sys.argv[1])
-# argv[2] is the URL query string, probably passed by request_to_self()
-# example: ?mode=play&media=ThisVideo
-args = urlparse.parse_qs(sys.argv[2][1:])
-# parse_qs puts the values in a list, so we grab the first value for each key
-args = {k: v[0] for k, v in args.items()}
-
+# To get settings and info
 addon = xbmcaddon.Addon()
+# To to get translated strings
 getstr = addon.getLocalizedString
-
-# Tested in Kodi 18: This will disable all viewtypes but list and icons won't be displayed within the list
-xbmcplugin.setContent(addon_handle, 'files')
 
 vres = addon.getSetting('video_res')
 video_res = [1080, 720, 480, 360, 240][int(vres)]
@@ -109,7 +106,7 @@ class Directory(object):
 
         c.key = data.get('key')
         if not c.key:
-            xbmc.log('category has no "key" metadata, skipping', xbmc.LOGWARNING)
+            log('category has no "key" metadata, skipping', LOGWARNING)
             return None
 
         c.title = data.get('name')
@@ -125,8 +122,9 @@ class Directory(object):
         """Create a Kodi listitem from the metadata"""
 
         try:
-            # offscreen is a Kodi v18 feature that speeds things up considerably
-            # But we wont't be able to change the listitem after running .addDirectoryItem()
+            # offscreen is a Kodi v18 feature
+            # We wont't be able to change the listitem after running .addDirectoryItem()
+            # But load time for this function is cut down by 93% (!)
             li = xbmcgui.ListItem(self.title, offscreen=True)
         except TypeError:
             li = xbmcgui.ListItem(self.title)
@@ -180,7 +178,7 @@ class Media(Directory):
 
         if c.hidden and censor_hidden:
             if not c.key:
-                xbmc.log('hidden media has no "key" metadata, skipping', xbmc.LOGWARNING)
+                log('hidden media has no "key" metadata, skipping', LOGWARNING)
                 return None
             hidden_item = cls(title=getstr(30013),
                               url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: c.key}),
@@ -189,7 +187,7 @@ class Media(Directory):
 
         c.url, c.size = c.get_preferred_media_file(data.get('files', []))
         if not c.url:
-            xbmc.log('media has no playable files, skipping', xbmc.LOGWARNING)
+            log('media has no playable files, skipping', LOGWARNING)
             return None
 
         c.title = data.get('title')
@@ -214,7 +212,7 @@ class Media(Directory):
         c.title = data.get('displayTitle')
         c.key = data.get('languageAgnosticNaturalKey')
         if not c.key:
-            xbmc.log('hidden media has no "key" metadata, skipping', xbmc.LOGWARNING)
+            log('hidden media has no "key" metadata, skipping', LOGWARNING)
             return None
         c.publish_date = data.get('firstPublishedDate')
         if c.key:
@@ -329,7 +327,7 @@ class Media(Directory):
             info_dict['year'] = time.strftime('%Y', self.publish_date)
 
         try:
-            # Kodi v18 feature, suppressing GUI locks will speed things up considerably
+            # Kodi v18
             li = xbmcgui.ListItem(self.title, offscreen=True)
         except TypeError:
             li = xbmcgui.ListItem(self.title)
@@ -402,16 +400,16 @@ def get_json(url, nofail=False):
 
     try:
         if type(url) == str:
-            xbmc.log('opening ' + url, xbmc.LOGINFO)
+            log('opening ' + url, LOGINFO)
         elif isinstance(url, urllib2.Request):
-            xbmc.log('opening ' + url.get_full_url(), xbmc.LOGINFO)
+            log('opening ' + url.get_full_url(), LOGINFO)
         data = urllib2.urlopen(url).read().decode('utf-8')
     except urllib2.URLError as e:
         if nofail:
-            xbmc.log('{}: {}'.format(url, e.reason), xbmc.LOGWARNING)
+            log('{}: {}'.format(url, e.reason), LOGWARNING)
             return None
         else:
-            xbmc.log('{}: {}'.format(url, e.reason), xbmc.LOGERROR)
+            log('{}: {}'.format(url, e.reason), LOGERROR)
             xbmcgui.Dialog().notification(
                 addon.getAddonInfo('name'),
                 getstr(30009),
@@ -427,7 +425,7 @@ def get_jwt_token(update=False):
 
     token = addon.getSetting('jwt_token')
     if not token or update is True:
-        xbmc.log('requesting new authentication token from tv.jw.org', xbmc.LOGINFO)
+        log('requesting new authentication token from tv.jw.org', LOGINFO)
         url = 'https://tv.jw.org/tokens/web.jwt'
         token = urllib2.urlopen(url).read().decode('utf-8')
         if token != '':
@@ -638,12 +636,14 @@ def resolve_media(media_key, lang=None):
 def request_to_self(query):
     """Return a string with an URL request to the add-on itself"""
 
-    if Q_CPROFILE in args:
-        query['cprofile'] = 'true'
+    # argv[0] is path to the plugin
     return sys.argv[0] + '?' + urllib.urlencode(query)
 
 
 def main():
+    # Tested in Kodi 18: This will disable all viewtypes but list and icons won't be displayed within the list
+    xbmcplugin.setContent(addon_handle, 'files')
+
     mode = args.get(Q_MODE)
 
     if mode is None:
@@ -670,13 +670,21 @@ def main():
 
 
 if __name__ == '__main__':
-    if Q_CPROFILE in args:
+    # The awkward way Kodi passes arguments to the add-on...
+    # argv[2] is a URL query string, probably passed by request_to_self()
+    # example: ?mode=play&media=ThisVideo
+    args = urlparse.parse_qs(sys.argv[2][1:])
+    # parse_qs puts the values in a list, so we grab the first value for each key
+    args = {k: v[0] for k, v in args.items()}
+
+    if CPROFILE:
         import cProfile
 
         output = '{}/{}-{}-{}.cprof'.format(CPROFILE_OUTPUT_DIR,
                                             time.strftime('%y%m%d%H%M%S'),
                                             args.get(Q_MODE),
                                             args.get(Q_CATKEY) or args.get(Q_MEDIAKEY))
+        log('saving cProfile output to ' + output)
         cProfile.run('main()', output)
     else:
         main()
