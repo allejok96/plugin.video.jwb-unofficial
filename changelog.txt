@@ -1,3 +1,6 @@
+v1.11.2
+- Performace optimizations
+
 v1.11.1
 - Fix fanart bug stupid me
 
