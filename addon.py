@@ -394,12 +394,16 @@ def getr(obj, keys, default=None, fail=False):
         return default
 
 
-def get_json(url, nofail=False):
+def get_json(url, on_fail='exit'):
     """Fetch JSON data from an URL and return it as a Python object
 
     :param url: URL to open or a Request object
-    :param nofail: ignore URLError if True"""
+    :param on_fail: string, what to do on a URLError: exit, log, error
 
+    exit - issue a notification to Kodi and exit the plugin instance (default)
+    log - print to the log and return None
+    error - raise an error
+    """
     try:
         if type(url) == str:
             log('opening ' + url, LOGINFO)
@@ -407,10 +411,10 @@ def get_json(url, nofail=False):
             log('opening ' + url.get_full_url(), LOGINFO)
         data = urllib2.urlopen(url).read().decode('utf-8')
     except urllib2.URLError as e:
-        if nofail:
+        if on_fail == 'log':
             log('{}: {}'.format(url, e.reason), LOGWARNING)
             return None
-        else:
+        elif on_fail == 'exit':
             log('{}: {}'.format(url, e.reason), LOGERROR)
             xbmcgui.Dialog().notification(
                 addon.getAddonInfo('name'),
@@ -418,6 +422,8 @@ def get_json(url, nofail=False):
                 icon=xbmcgui.NOTIFICATION_ERROR)
             # Don't raise an error, it will just generate another cryptic notification in Kodi
             exit()
+        else:
+            raise e
     else:
         return json.loads(data)
 
@@ -458,7 +464,7 @@ def top_level_page():
     # Try cache first, to speed up loading
     search_label = addon.getSetting('search_tr')
     if not search_label:
-        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, nofail=True)
+        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, on_fail='log')
         search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
         addon.setSetting('search_tr', search_label)
     d = Directory(url=request_to_self({Q_MODE: M_SEARCH}), title=search_label, fanart=default_fanart,
@@ -584,7 +590,7 @@ def search_page():
         query = urllib.urlencode({'q': search_string, 'lang': language, 'limit': 24})
         headers = {'Authorization': 'Bearer ' + get_jwt_token()}
         try:
-            data = get_json(urllib2.Request(url + query, headers=headers), nofail=True)
+            data = get_json(urllib2.Request(url + query, headers=headers), on_fail='error')
         except urllib2.HTTPError as e:
             if e.code == 401:
                 headers = {'Authorization': 'Bearer ' + get_jwt_token(True)}
