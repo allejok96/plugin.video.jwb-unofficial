@@ -1,3 +1,7 @@
+v1.11.3
+- Search bugfix
+- This has gone too far, no?
+
 v1.11.2
 - Performace optimizations
 
