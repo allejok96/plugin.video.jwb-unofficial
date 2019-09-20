@@ -9,4 +9,5 @@
     <setting  id="subtitles" type="bool" label="30012" default="false" />
     <setting  id="startupmsg" type="bool" label="30015" default="true" />
     <setting  id="jwt_token" type="text" default="" visible="false" />
+    <setting  id="search_tr" type="text" default="" visible="false" />
 </settings>

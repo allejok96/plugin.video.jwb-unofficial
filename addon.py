@@ -10,8 +10,18 @@ import xbmcplugin
 import xbmcaddon
 import xbmcgui
 import xbmc
+from xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
 
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
+    xbmc.log('plugin.video.jwb-unofficial: simplejson not found, falling back to default json')
+
+# Set to True for performance profiling
+CPROFILE = False
+CPROFILE_OUTPUT_DIR = '/tmp'
 
 # Static names for valid URL queries and modes, to simplify for the IDE
 Q_MODE = 'mode'
@@ -28,21 +38,14 @@ M_PLAY = 'play'
 M_BROWSE = 'browse'
 M_STREAM = 'stream'
 
-# The awkward way Kodi passes arguments to the add-on...
-# argv[0] is the plugin path
-# argv[1] is the add-on handle, whatever that means, unique to this instance
+# To send stuff to the screen
 addon_handle = int(sys.argv[1])
-# argv[2] is the URL query string, probably passed by request_to_self()
-# example: ?mode=play&media=ThisVideo
-args = urlparse.parse_qs(sys.argv[2][1:])
-# parse_qs puts the values in a list, so we grab the first value for each key
-args = {k: v[0] for k, v in args.items()}
-
+# To get settings and info
 addon = xbmcaddon.Addon()
+# For logging purpose
+addon_id = addon.getAddonInfo('id')
+# To to get translated strings
 getstr = addon.getLocalizedString
-
-# Tested in Kodi 18: This will disable all viewtypes but list and icons won't be displayed within the list
-xbmcplugin.setContent(addon_handle, 'files')
 
 vres = addon.getSetting('video_res')
 video_res = [1080, 720, 480, 360, 240][int(vres)]
@@ -50,6 +53,10 @@ subtitles = addon.getSetting('subtitles') == 'true'
 language = addon.getSetting('language')
 if not language:
     language = 'E'
+
+
+def log(msg, level=LOGDEBUG):
+    xbmc.log(addon_id + ': ' + msg, level)
 
 
 class Directory(object):
@@ -101,7 +108,7 @@ class Directory(object):
 
         c.key = data.get('key')
         if not c.key:
-            xbmc.log('category has no "key" metadata, skipping', xbmc.LOGWARNING)
+            log('category has no "key" metadata, skipping', LOGWARNING)
             return None
 
         c.title = data.get('name')
@@ -116,12 +123,26 @@ class Directory(object):
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
 
-        li = xbmcgui.ListItem(self.title)
+        try:
+            # offscreen is a Kodi v18 feature
+            # We wont't be able to change the listitem after running .addDirectoryItem()
+            # But load time for this function is cut down by 93% (!)
+            li = xbmcgui.ListItem(self.title, offscreen=True)
+        except TypeError:
+            li = xbmcgui.ListItem(self.title)
+        art_dict = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
+        # Check if there's any art, setArt can be kinda slow
+        if max(v for v in art_dict.values()):
+            li.setArt(art_dict)
+        li.setInfo('video', {'plot': self.description})
+
+        return li
+
+    def listitem_with_path(self):
+        """Return ListItem with path set, because apparently setPath() is slow"""
+
+        li = self.listitem()
         li.setPath(self.url)
-        li.setArt({'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart})
-        if isinstance(self, Directory):
-            # Only do this for Directories, as this will break music metadata
-            li.setInfo('video', {'plot': self.description})
         return li
 
     def add_item_in_kodi(self):
@@ -159,7 +180,7 @@ class Media(Directory):
 
         if c.hidden and censor_hidden:
             if not c.key:
-                xbmc.log('hidden media has no "key" metadata, skipping', xbmc.LOGWARNING)
+                log('hidden media has no "key" metadata, skipping', LOGWARNING)
                 return None
             hidden_item = cls(title=getstr(30013),
                               url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: c.key}),
@@ -168,7 +189,7 @@ class Media(Directory):
 
         c.url, c.size = c.get_preferred_media_file(data.get('files', []))
         if not c.url:
-            xbmc.log('media has no playable files, skipping', xbmc.LOGWARNING)
+            log('media has no playable files, skipping', LOGWARNING)
             return None
 
         c.title = data.get('title')
@@ -193,7 +214,7 @@ class Media(Directory):
         c.title = data.get('displayTitle')
         c.key = data.get('languageAgnosticNaturalKey')
         if not c.key:
-            xbmc.log('hidden media has no "key" metadata, skipping', xbmc.LOGWARNING)
+            log('hidden media has no "key" metadata, skipping', LOGWARNING)
             return None
         c.publish_date = data.get('firstPublishedDate')
         if c.key:
@@ -218,11 +239,13 @@ class Media(Directory):
 
     @publish_date.setter
     def publish_date(self, value):
-        try:
-            # 2017-05-18T15:41:52.197Z
-            self.__publish_date = time.strptime(value[0:19], '%Y-%m-%dT%H:%M:%S')
-        except (ValueError, TypeError):
-            pass
+        """Value is a string like 2017-05-18T15:41:52.197Z"""
+
+        # Dates are not visible in default skin, all this does is slow down processing
+        # try: self.__publish_date = time.strptime(value[0:19], '%Y-%m-%dT%H:%M:%S')
+        # except (ValueError, TypeError): pass
+
+        pass
 
     @property
     def duration(self):
@@ -285,17 +308,35 @@ class Media(Directory):
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
 
-        li = super(Media, self).listitem()
-        li.setInfo(self.media_type, {'duration': self.duration})
-        li.setInfo(self.media_type, {'title': self.title})
-        li.setInfo(self.media_type, {'size': self.size})
+        art_dict = {
+            'icon': self.icon,
+            'poster': self.icon,
+            'fanart': self.fanart
+        }
+        info_dict = {
+            'duration': self.duration,
+            'title': self.title,
+            'size': self.size
+        }
+
         if self.media_type == 'music':
-            li.setInfo(self.media_type, {'comment': self.description})
+            info_dict['comment'] = self.description
         else:
-            li.setInfo(self.media_type, {'plot': self.description})
+            info_dict['plot'] = self.description
+
         if self.publish_date:
-            li.setInfo(self.media_type, {'date': time.strftime('%d.%m.%Y', self.publish_date)})
-            li.setInfo(self.media_type, {'year': time.strftime('%Y', self.publish_date)})
+            info_dict['date'] = time.strftime('%d.%m.%Y', self.publish_date)
+            info_dict['year'] = time.strftime('%Y', self.publish_date)
+
+        try:
+            # Kodi v18
+            li = xbmcgui.ListItem(self.title, offscreen=True)
+        except TypeError:
+            li = xbmcgui.ListItem(self.title)
+
+        li.setArt(art_dict)
+        li.setInfo(self.media_type, info_dict)
+
         if self.offset:
             li.setProperty('StartOffset', self.offset)
         if self.url:
@@ -314,42 +355,43 @@ class Media(Directory):
         return li
 
 
-def getr(obj, keys, default=None, level=0):
+def getr(obj, keys, default=None, fail=False):
     """Recursive get function
 
     :param obj: list, dictionary or tuple
     :param keys: an iterable with indexes and keys (or tuples with indexes and keys)
     :param default: value to return if it fails'
-    :param level: int, used internally
+    :param fail: used internally
 
     Example of keys: ['colors', ('red', 'green'), 2]
     Would match: ['colors']['red'][2] or ['colors']['green'][2]
     Keys are tested in order, and the first valid value is returned
     """
+    this_level = keys[0]
+    del keys[0]
 
-    if type(keys[level]) not in (list, tuple):
-        this_level = [keys[level]]
-    else:
-        this_level = keys[level]
+    if type(this_level) != tuple:
+        this_level = (this_level,)
 
     for key_try in this_level:
         try:
-            if len(keys) - 1 > level:
+            new_obj = obj[key_try]
+            if keys:
                 # More levels, go deeper
-                return getr(obj[key_try], keys, level=level + 1)
+                return getr(new_obj, keys, fail=True)
             else:
                 # Last level, return value
-                return obj[key_try]
-        except (TypeError, KeyError, IndexError) as e:
+                return new_obj
+        except (TypeError, KeyError, IndexError):
             # Could not get value, try next
             continue
 
-    if level == 0:
-        # Everything failed, we return nicely
-        return default
-    else:
+    if fail:
         # No keys existed for this level, return to parent
         raise KeyError
+    else:
+        # Everything failed, we return nicely
+        return default
 
 
 def get_json(url, nofail=False):
@@ -360,16 +402,16 @@ def get_json(url, nofail=False):
 
     try:
         if type(url) == str:
-            xbmc.log('opening ' + url, xbmc.LOGINFO)
+            log('opening ' + url, LOGINFO)
         elif isinstance(url, urllib2.Request):
-            xbmc.log('opening ' + url.get_full_url(), xbmc.LOGINFO)
+            log('opening ' + url.get_full_url(), LOGINFO)
         data = urllib2.urlopen(url).read().decode('utf-8')
     except urllib2.URLError as e:
         if nofail:
-            xbmc.log('{}: {}'.format(url, e.reason), xbmc.LOGWARNING)
+            log('{}: {}'.format(url, e.reason), LOGWARNING)
             return None
         else:
-            xbmc.log('{}: {}'.format(url, e.reason), xbmc.LOGERROR)
+            log('{}: {}'.format(url, e.reason), LOGERROR)
             xbmcgui.Dialog().notification(
                 addon.getAddonInfo('name'),
                 getstr(30009),
@@ -385,7 +427,7 @@ def get_jwt_token(update=False):
 
     token = addon.getSetting('jwt_token')
     if not token or update is True:
-        xbmc.log('requesting new authentication token from tv.jw.org', xbmc.LOGINFO)
+        log('requesting new authentication token from tv.jw.org', LOGINFO)
         url = 'https://tv.jw.org/tokens/web.jwt'
         token = urllib2.urlopen(url).read().decode('utf-8')
         if token != '':
@@ -413,8 +455,12 @@ def top_level_page():
             d.add_item_in_kodi()
 
     # Get "search" translation from internet - overkill but so cool
-    data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, nofail=True)
-    search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
+    # Try cache first, to speed up loading
+    search_label = addon.getSetting('search_tr')
+    if not search_label:
+        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, nofail=True)
+        search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
+        addon.setSetting('search_tr', search_label)
     d = Directory(url=request_to_self({Q_MODE: M_SEARCH}), title=search_label, fanart=default_fanart,
                   icon='DefaultMusicSearch.png')
     d.add_item_in_kodi()
@@ -425,6 +471,11 @@ def top_level_page():
 def sub_level_page(sub_level):
     """A sub-level page with either folders or playable media"""
 
+    # TODO: less detailed request?
+    #  For categories like VODStudio that contains subcategories with media,
+    #  all media is included in the response, which slows down the parsing a lot.
+    #  All this extra data has no function in this script. If there only was a way
+    #  to request the subcategories, but without their media...
     data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '/' + sub_level + '?&detailed=1')
     data = data['category']
 
@@ -460,7 +511,7 @@ def play_stream(key):
             if offset:
                 media.offset = offset
                 offset = None
-            pl.add(media.url, media.listitem())
+            pl.add(media.url, media.listitem_with_path())
     xbmc.Player().play(pl)
 
 
@@ -506,6 +557,8 @@ def set_language(lang):
 
     addon.setSetting('language', lang)
     save_language_history(lang)
+    # Forget about the translation of "Search"
+    addon.setSetting('search_tr', '')
 
 
 def save_language_history(lang):
@@ -577,7 +630,7 @@ def resolve_media(media_key, lang=None):
     data = get_json(url)
     media = Media.parse_media(data['media'][0], censor_hidden=False)
     if media:
-        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem())
+        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
     else:
         raise RuntimeError
 
@@ -585,29 +638,55 @@ def resolve_media(media_key, lang=None):
 def request_to_self(query):
     """Return a string with an URL request to the add-on itself"""
 
+    # argv[0] is path to the plugin
     return sys.argv[0] + '?' + urllib.urlencode(query)
 
 
-mode = args.get(Q_MODE)
+def main():
+    # Tested in Kodi 18: This will disable all viewtypes but list and icons won't be displayed within the list
+    xbmcplugin.setContent(addon_handle, 'files')
 
-if mode is None:
-    top_level_page()
-elif mode == M_LANGUAGES:
-    language_dialog(args.get(Q_MEDIAKEY), args.get(Q_LANGFILTER))
-elif mode == M_SET_LANG:
-    set_language(args[Q_LANGCODE])
-elif mode == M_HIDDEN:
-    hidden_media_dialog(args[Q_MEDIAKEY])
-elif mode == M_SEARCH:
-    search_page()
-elif mode == M_PLAY:
-    resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
-elif mode == M_BROWSE:
-    sub_level_page(args[Q_CATKEY])
-elif mode == M_STREAM:
-    play_stream(args[Q_STREAMKEY])
-# Backwards compatibility
-elif mode.startswith('Streaming') and mode != 'Streaming':
-    play_stream(mode)
-else:
-    sub_level_page(mode)
+    mode = args.get(Q_MODE)
+
+    if mode is None:
+        top_level_page()
+    elif mode == M_LANGUAGES:
+        language_dialog(args.get(Q_MEDIAKEY), args.get(Q_LANGFILTER))
+    elif mode == M_SET_LANG:
+        set_language(args[Q_LANGCODE])
+    elif mode == M_HIDDEN:
+        hidden_media_dialog(args[Q_MEDIAKEY])
+    elif mode == M_SEARCH:
+        search_page()
+    elif mode == M_PLAY:
+        resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
+    elif mode == M_BROWSE:
+        sub_level_page(args[Q_CATKEY])
+    elif mode == M_STREAM:
+        play_stream(args[Q_STREAMKEY])
+    # Backwards compatibility
+    elif mode.startswith('Streaming') and mode != 'Streaming':
+        play_stream(mode)
+    else:
+        sub_level_page(mode)
+
+
+if __name__ == '__main__':
+    # The awkward way Kodi passes arguments to the add-on...
+    # argv[2] is a URL query string, probably passed by request_to_self()
+    # example: ?mode=play&media=ThisVideo
+    args = urlparse.parse_qs(sys.argv[2][1:])
+    # parse_qs puts the values in a list, so we grab the first value for each key
+    args = {k: v[0] for k, v in args.items()}
+
+    if CPROFILE:
+        import cProfile
+
+        output = '{}/{}-{}-{}.cprof'.format(CPROFILE_OUTPUT_DIR,
+                                            time.strftime('%y%m%d%H%M%S'),
+                                            args.get(Q_MODE),
+                                            args.get(Q_CATKEY) or args.get(Q_MEDIAKEY))
+        log('saving cProfile output to ' + output)
+        cProfile.run('main()', output)
+    else:
+        main()
