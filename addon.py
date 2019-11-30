@@ -5,6 +5,7 @@ import time
 import urllib
 import urllib2
 import urlparse
+import random
 
 import xbmcplugin
 import xbmcaddon
@@ -61,7 +62,7 @@ def log(msg, level=LOGDEBUG):
 
 class Directory(object):
     def __init__(self, key=None, url=None, title=None, icon=None, fanart=None, hidden=False, description=None,
-                 is_folder=True):
+                 is_folder=True, streamable=False):
         """An object containing metadata for a folder"""
 
         self.key = key
@@ -72,14 +73,24 @@ class Directory(object):
         self.hidden = hidden
         self.description = description
         self.is_folder = is_folder
+        self.streamable = streamable
 
-    @classmethod
-    def parse_common(cls, data):
+    def __nonzero__(self):
+        """Is everything ok?"""
+
+        # Never show hidden directories
+        if self.hidden:
+            return False
+        elif not self.key:
+            log('category has no "key" metadata, skipping', LOGWARNING)
+            return False
+        else:
+            return True
+
+    def parse_common(self, data):
         """Constructor from common metadata"""
-
-        c = cls()
-        c.description = data.get('description')
-        c.hidden = 'WebExclude' in data.get('tags', [])
+        self.description = data.get('description')
+        self.hidden = 'WebExclude' in data.get('tags', [])
 
         # A note on image abbreviations
         # Last letter: s is smaller, r/h is bigger
@@ -90,35 +101,25 @@ class Directory(object):
         # wss/wsr 16:9
         # lsr/lss 2:1
         # pns/pnr 3:1
-        c.icon = getr(data, ['images', ('sqr', 'cvr'), ('lg', 'md')])
-        c.fanart = getr(data, ['images', ('wsr', 'lsr', 'pnr'), ('md', 'lg')])
+        self.icon = getitem(data, 'images', ('sqr', 'cvr'), ('lg', 'md'))
+        # Note: don't overwrite fanart choice (in main menu)
+        if not self.fanart:
+            self.fanart = getitem(data, 'images', ('wsr', 'lsr', 'pnr'), ('md', 'lg'))
 
-        return c
-
-    @classmethod
-    def parse_category(cls, data):
+    def parse_category(self, data):
         """Constructor taking jw category metadata
 
         :param data: deserialized JSON data from jw.org
         """
-        c = cls.parse_common(data)
-        if c.hidden:
-            # Never any hidden directories
-            return None
+        self.parse_common(data)
+        self.key = data.get('key')
+        self.title = data.get('name')
 
-        c.key = data.get('key')
-        if not c.key:
-            log('category has no "key" metadata, skipping', LOGWARNING)
-            return None
+        tags = data.get('tags', [])
+        if 'StreamThisChannelEnabled' in tags or 'AllowShuffleInCategoryHeader' in tags:
+            self.streamable = True
 
-        c.title = data.get('name')
-        if data.get('type') == 'pseudostreaming':
-            m = M_STREAM
-        else:
-            m = M_BROWSE
-        c.url = request_to_self({Q_MODE: m, Q_STREAMKEY: c.key})
-
-        return c
+        self.url = request_to_self({Q_MODE: M_BROWSE, Q_STREAMKEY: self.key})
 
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
@@ -135,6 +136,11 @@ class Directory(object):
         if max(v for v in art_dict.values()):
             li.setArt(art_dict)
         li.setInfo('video', {'plot': self.description})
+
+        if self.streamable:
+            query = {Q_MODE: M_STREAM, Q_STREAMKEY: self.key}
+            action = 'RunPlugin(' + request_to_self(query) + ')'
+            li.addContextMenuItems([(getstr(30007), action)])
 
         return li
 
@@ -168,70 +174,62 @@ class Media(Directory):
         self.__duration = duration
         self.is_folder = is_folder
 
-    @classmethod
-    def parse_media(cls, data, censor_hidden=True):
+    def __nonzero__(self):
+        """Is everything ok?"""
+
+        if self.hidden and not self.key:
+            log('hidden media has no "key" metadata, skipping', LOGWARNING)
+        elif not self.hidden and not self.url:
+            log('media has no playable files, skipping', LOGWARNING)
+        else:
+            return True
+
+    def parse_media(self, data, censor_hidden=True):
         """Constructor taking jw media metadata
 
         :param data: deserialized JSON data from jw.org
         :param censor_hidden: if True, media marked as hidden will ask for permission before being displayed
         """
-        c = cls.parse_common(data)
-        c.key = data.get('languageAgnosticNaturalKey')
+        self.parse_common(data)
+        self.key = data.get('languageAgnosticNaturalKey')
 
-        if c.hidden and censor_hidden:
-            if not c.key:
-                log('hidden media has no "key" metadata, skipping', LOGWARNING)
-                return None
-            hidden_item = cls(title=getstr(30013),
-                              url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: c.key}),
-                              is_folder=True)
-            return hidden_item
+        if self.hidden and censor_hidden:
+            # Reset to these values
+            self.__init__(title=getstr(30013),
+                          url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: self.key}),
+                          is_folder=True)
+        else:
+            self.url, self.size = self.get_preferred_media_file(data.get('files', []))
+            self.title = data.get('title')
+            if data.get('type') == 'audio':
+                self.media_type = 'music'
+            self.duration = data.get('duration')
+            self.publish_date = data.get('firstPublished')
+            self.languages = data.get('availableLanguages', [])
 
-        c.url, c.size = c.get_preferred_media_file(data.get('files', []))
-        if not c.url:
-            log('media has no playable files, skipping', LOGWARNING)
-            return None
-
-        c.title = data.get('title')
-        if data.get('type') == 'audio':
-            c.media_type = 'music'
-        c.duration = data.get('duration')
-        c.publish_date = data.get('firstPublished')
-        c.languages = data.get('availableLanguages', [])
-
-        return c
-
-    @classmethod
-    def parse_hits(cls, data):
+    def parse_hits(self, data):
         """Create an instance of Media out of search results
 
         :param data: deserialized search result JSON data from jw.org
         """
-        c = cls()
-
         if 'type:audio' in data.get('tags', []):
-            c.media_type = 'music'
-        c.title = data.get('displayTitle')
-        c.key = data.get('languageAgnosticNaturalKey')
-        if not c.key:
-            log('hidden media has no "key" metadata, skipping', LOGWARNING)
-            return None
-        c.publish_date = data.get('firstPublishedDate')
-        if c.key:
-            c.url = request_to_self({Q_MODE: M_PLAY, Q_MEDIAKEY: c.key})
+            self.media_type = 'music'
+        self.title = data.get('displayTitle')
+        self.key = data.get('languageAgnosticNaturalKey')
+        self.publish_date = data.get('firstPublishedDate')
+        if self.key:
+            self.url = request_to_self({Q_MODE: M_PLAY, Q_MEDIAKEY: self.key})
 
         for m in data.get('metadata', []):
             if m.get('key') == 'duration':
-                c.duration = m.get('value')
+                self.duration = m.get('value')
 
         # TODO? We could try for pnr and cvr images too, but I'm too lazy, and no one cares about search anyway
         for i in data.get('images', []):
             if i.get('size') == 'md' and i.get('type') == 'sqr':
-                c.icon = i.get('url')
+                self.icon = i.get('url')
             if i.get('size') == 'md' and i.get('type') == 'lsr':
-                c.fanart = i.get('url')
-
-        return c
+                self.fanart = i.get('url')
 
     @property
     def publish_date(self):
@@ -355,43 +353,45 @@ class Media(Directory):
         return li
 
 
-def getr(obj, keys, default=None, fail=False):
+def getitem(obj, *keys, **kwargs):
     """Recursive get function
 
+    Keys are checked in order, and the first found value is returned
+
     :param obj: list, dictionary or tuple
-    :param keys: an iterable with indexes and keys (or tuples with indexes and keys)
-    :param default: value to return if it fails'
-    :param fail: used internally
+    :param keys: a index or a key name or a tuple with indexes and key names
+    :keyword default: value to return if it fails
+    :keyword fail: used internally
 
-    Example of keys: ['colors', ('red', 'green'), 2]
-    Would match: ['colors']['red'][2] or ['colors']['green'][2]
-    Keys are tested in order, and the first valid value is returned
+    Example: getitem(colorlist, ('red', 'green'), 2)
+
+    Would match: colorlist['red'][2] or colorlist['green'][2]
     """
-    this_level = keys[0]
-    del keys[0]
+    assert keys
+    sublevels = list(keys)
+    toplevels = sublevels.pop(0)
 
-    if type(this_level) != tuple:
-        this_level = (this_level,)
+    if type(toplevels) != tuple:
+        toplevels = (toplevels,)
 
-    for key_try in this_level:
+    for toplevel in toplevels:
         try:
-            new_obj = obj[key_try]
-            if keys:
+            if len(sublevels) > 0:
                 # More levels, go deeper
-                return getr(new_obj, keys, fail=True)
+                return getitem(obj[toplevel], *sublevels, fail=True)
             else:
                 # Last level, return value
-                return new_obj
+                return obj[toplevel]
         except (TypeError, KeyError, IndexError):
             # Could not get value, try next
             continue
 
-    if fail:
+    if kwargs.get('fail', False):
         # No keys existed for this level, return to parent
         raise KeyError
     else:
         # Everything failed, we return nicely
-        return default
+        return kwargs.get('default')
 
 
 def get_json(url, on_fail='exit'):
@@ -455,9 +455,9 @@ def top_level_page():
     data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '?detailed=True')
 
     for c in data['categories']:
-        d = Directory.parse_category(c)
+        d = Directory(fanart=default_fanart)
+        d.parse_category(c)
         if d:
-            d.fanart = default_fanart
             d.add_item_in_kodi()
 
     # Get "search" translation from internet - overkill but so cool
@@ -465,7 +465,7 @@ def top_level_page():
     search_label = addon.getSetting('search_tr')
     if not search_label:
         data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, on_fail='log')
-        search_label = getr(data, ['translations', language, 'hdgSearch'], default='Search')
+        search_label = getitem(data, 'translations', language, 'hdgSearch', default='Search')
         addon.setSetting('search_tr', search_label)
     d = Directory(url=request_to_self({Q_MODE: M_SEARCH}), title=search_label, fanart=default_fanart,
                   icon='DefaultMusicSearch.png')
@@ -491,33 +491,41 @@ def sub_level_page(sub_level):
 
     if 'subcategories' in data:
         for sc in data['subcategories']:
-            d = Directory.parse_category(sc)
+            d = Directory()
+            d.parse_category(sc)
             if d:
                 d.add_item_in_kodi()
     if 'media' in data:
         for md in data['media']:
-            m = Media.parse_media(md)
+            m = Media()
+            m.parse_media(md)
             if m:
                 m.add_item_in_kodi()
 
     xbmcplugin.endOfDirectory(addon_handle)
 
 
-def play_stream(key):
-    """Generate a playlist out of the streaming schedule and start playing it"""
+def shuffle_category(key):
+    """Generate a shuffled playlist and start playing"""
 
-    # TODO add utcOffset= to the URL, but how do we determine the timezone?
-    data = get_json('https://data.jw-api.org/mediator/v1/schedules/' + language + '/' + key)
+    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '/' + key + '?&detailed=1')
+    data = data['category']
+    all_media = data.get('media', [])
+    for sc in data.get('subcategories', []):  # type: dict
+        all_media += sc.get('media', [])
+
+    # Shuffle in place, we don't want to mess with Kodi's settings
+    random.shuffle(all_media)
+
     pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     pl.clear()
-    offset = str(getr(data, ['category', 'position', 'time'], default=0))
-    for md in data['category']['media']:
-        media = Media.parse_media(md)
-        if media:
-            if offset:
-                media.offset = offset
-                offset = None
+
+    for md in all_media:
+        media = Media()
+        media.parse_media(md, censor_hidden=False)
+        if media and not media.hidden:
             pl.add(media.url, media.listitem_with_path())
+
     xbmc.Player().play(pl)
 
 
@@ -599,7 +607,8 @@ def search_page():
                 raise e
 
         for hd in data['hits']:
-            media = Media.parse_hits(hd)
+            media = Media()
+            media.parse_hits(hd)
             if media:
                 media.add_item_in_kodi()
 
@@ -613,7 +622,8 @@ def hidden_media_dialog(media_key):
     if dialog.yesno(getstr(30013), getstr(30014)):
         url = 'https://data.jw-api.org/mediator/v1/media-items/' + language + '/' + media_key
         data = get_json(url)
-        media = Media.parse_media(data['media'][0], censor_hidden=False)
+        media = Media()
+        media.parse_media(data['media'][0], censor_hidden=False)
         if media:
             media.add_item_in_kodi()
         else:
@@ -634,7 +644,8 @@ def resolve_media(media_key, lang=None):
 
     url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or language) + '/' + media_key
     data = get_json(url)
-    media = Media.parse_media(data['media'][0], censor_hidden=False)
+    media = Media()
+    media.parse_media(data['media'][0], censor_hidden=False)
     if media:
         xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
     else:
@@ -669,10 +680,10 @@ def main():
     elif mode == M_BROWSE:
         sub_level_page(args[Q_CATKEY])
     elif mode == M_STREAM:
-        play_stream(args[Q_STREAMKEY])
+        shuffle_category(args[Q_STREAMKEY])
     # Backwards compatibility
     elif mode.startswith('Streaming') and mode != 'Streaming':
-        play_stream(mode)
+        shuffle_category(mode)
     else:
         sub_level_page(mode)
 
