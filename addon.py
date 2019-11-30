@@ -513,7 +513,9 @@ def shuffle_category(key):
     data = data['category']
     all_media = data.get('media', [])
     for sc in data.get('subcategories', []):  # type: dict
-        all_media += sc.get('media', [])
+        # Don't include things like Featured, because that would become duplicate
+        if 'AllowShuffleInCategoryHeader' in sc.get('tags', []):
+            all_media += sc.get('media', [])
 
     # Shuffle in place, we don't want to mess with Kodi's settings
     random.shuffle(all_media)
