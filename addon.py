@@ -212,9 +212,10 @@ class Media(Directory):
 
         :param data: deserialized search result JSON data from jw.org
         """
+        self.title = data.get('displayTitle')
         if 'type:audio' in data.get('tags', []):
             self.media_type = 'music'
-        self.title = data.get('displayTitle')
+            self.title += ' ' + getstr(30008)
         self.key = data.get('languageAgnosticNaturalKey')
         self.publish_date = data.get('firstPublishedDate')
         if self.key:
