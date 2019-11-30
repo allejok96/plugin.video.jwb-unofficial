@@ -13,7 +13,7 @@ The best way to watch it  is using an officially supported device with the offic
 
 ## Installation
 
-There are multiple ways you can install this add-on. You could use `git clone` or [Download ZIP](https://github.com/allejok96/plugin.video.jwb-unofficial/archive/master.zip) from GitHub.
+There are multiple ways you can install this add-on. You could use `git clone` or Download ZIP from GitHub.
 
 But the easiest way is to install it from my repo. This way you'll receive updates automatically (if I remember to upload them):
 

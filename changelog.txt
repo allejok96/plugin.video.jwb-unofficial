@@ -1,3 +1,7 @@
+v1.12.0
+- Shuffle feature replaces streaming
+- Audio only is marked in search results
+
 v1.11.3
 - Search bugfix
 - This has gone too far, no?
