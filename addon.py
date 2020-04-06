@@ -90,9 +90,16 @@ class Directory(object):
     def parse_common(self, data):
         """Constructor from common metadata"""
         self.description = data.get('description')
-        self.hidden = 'WebExclude' in data.get('tags', [])
 
-        # A note on image abbreviations
+        # Note about tags
+        # RokuExclude, FireTVExclude, AppleTVExclude are set-top boxes like Kodi, we should use one of these
+        # WebExclude = deprecated? may be tv.jw.org
+        # RWSLExclude = Sign Language?
+        # JWORGExclude vs WWWExclude, what's the difference?
+        # Library[Tag] has something to do with the new changes to jw.org
+        self.hidden = 'AppleTVExclude' in data.get('tags', [])
+
+        # Note about image abbreviations
         # Last letter: s is smaller, r/h is bigger
         # pss/psr 3:4
         # sqs/sqr 1:1
