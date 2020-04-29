@@ -43,7 +43,6 @@ except ImportError:
     # Py2: When using str, we mean unicode string
     str = unicode
 
-
 # Set to True for performance profiling
 CPROFILE = False
 CPROFILE_OUTPUT_DIR = '/tmp'
@@ -62,6 +61,7 @@ M_HIDDEN = 'ask_hidden'
 M_PLAY = 'play'
 M_BROWSE = 'browse'
 M_STREAM = 'stream'
+M_PLAY_NODUB = 'nondubbed'
 
 # To send stuff to the screen
 addon_handle = int(sys.argv[1])
@@ -74,7 +74,7 @@ getstr = addon.getLocalizedString
 
 vres = addon.getSetting('video_res')
 video_res = [1080, 720, 480, 360, 240][int(vres)]
-subtitles = addon.getSetting('subtitles') == 'true'
+hard_subtitles_setting = addon.getSetting('subtitles') == 'true'
 language = addon.getSetting('language')
 if not language:
     language = 'E'
@@ -99,7 +99,7 @@ class Directory(object):
         self.is_folder = is_folder
         self.streamable = streamable
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Is everything ok?"""
 
         # Never show hidden directories
@@ -110,6 +110,8 @@ class Directory(object):
             return False
         else:
             return True
+
+    __nonzero__ = __bool__
 
     def parse_common(self, data):
         """Constructor from common metadata"""
@@ -190,12 +192,11 @@ class Directory(object):
 
 
 class Media(Directory):
-    def __init__(self, offset=None, duration=None, media_type='video', languages=None, publish_date=None,
-                 size=None, is_folder=False, **kwargs):
+    def __init__(self, duration=None, media_type='video', languages=None, publish_date=None,
+                 size=None, is_folder=False, subtitles=None, **kwargs):
         """An object containing metadata for a video or audio recording"""
 
         super(Media, self).__init__(**kwargs)
-        self.offset = offset
         self.media_type = media_type
         self.size = size
         self.languages = languages
@@ -204,8 +205,9 @@ class Media(Directory):
         self.__publish_date = publish_date
         self.__duration = duration
         self.is_folder = is_folder
+        self.subtitles = subtitles
 
-    def __nonzero__(self):
+    def __bool__(self):
         """Is everything ok?"""
 
         if self.hidden and not self.key:
@@ -214,6 +216,8 @@ class Media(Directory):
             log('media has no playable files, skipping', LOGWARNING)
         else:
             return True
+
+    __nonzero__ = __bool__
 
     def parse_media(self, data, censor_hidden=True):
         """Constructor taking jw media metadata
@@ -230,7 +234,7 @@ class Media(Directory):
                           url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: self.key}),
                           is_folder=True)
         else:
-            self.url, self.size = self.get_preferred_media_file(data.get('files', []))
+            self.url, self.size, self.subtitles = self.get_preferred_media_file(data.get('files', []))
             self.title = data.get('title')
             if data.get('type') == 'audio':
                 self.media_type = 'music'
@@ -301,7 +305,7 @@ class Media(Directory):
 
     @staticmethod
     def get_preferred_media_file(data):
-        """Take an jw JSON array of files and metadata and return the most suitable like (url, size)"""
+        """Take an jw JSON array of files and metadata and return the most suitable like (url, size, subtitles)"""
 
         # Rank media files depending on how they match certain criteria
         # Video resolution will be converted to a rank between 2 and 10
@@ -323,7 +327,7 @@ class Media(Directory):
             if 0 < res <= video_res:
                 rank += resolution_not_too_big
             # 'subtitled' only applies to hardcoded video subtitles
-            if f.get('subtitled') is subtitles:
+            if f.get('subtitled') == hard_subtitles_setting:
                 rank += subtitles_matches_pref
             files.append((rank, f))
         files.sort()
@@ -331,9 +335,9 @@ class Media(Directory):
         if len(files) > 0:
             # [-1] The file with the highest rank, [1] the filename, not the rank
             f = files[-1][1]
-            return f['progressiveDownloadURL'], f['filesize']
+            return f['progressiveDownloadURL'], f['filesize'], getitem(f, 'subtitles', 'url', default=None)
         else:
-            return None, None
+            return None, None, None
 
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
@@ -367,11 +371,13 @@ class Media(Directory):
         li.setArt(art_dict)
         li.setInfo(self.media_type, info_dict)
 
-        if self.offset:
-            li.setProperty('StartOffset', self.offset)
         if self.url:
             # For some reason needed by xbmcplugin.setResolvedUrl
             li.setProperty("isPlayable", "true")
+        if self.subtitles:
+            li.setSubtitles([self.subtitles])
+
+        context_menu = []
 
         # Play in other language context menu
         if self.key:
@@ -380,7 +386,18 @@ class Media(Directory):
                 query[Q_LANGFILTER] = ' '.join(self.languages)
             # Note: Use RunPlugin instead of RunAddon, because an add-on assumes a folder view
             action = 'RunPlugin(' + request_to_self(query) + ')'
-            li.addContextMenuItems([(getstr(30006), action)])
+            context_menu.append((getstr(30006), action))
+
+        # Play in English with subtitles
+        if self.key and self.subtitles and language != 'E':
+            query = {Q_MODE: M_PLAY_NODUB, Q_MEDIAKEY: self.key}
+            if self.languages:
+                query[Q_LANGFILTER] = ' '.join(self.languages)
+            action = 'PlayMedia(' + request_to_self(query) + ')'
+            context_menu.append((getstr(30022), action))
+
+        if context_menu:
+            li.addContextMenuItems(context_menu)
 
         return li
 
@@ -666,21 +683,33 @@ def hidden_media_dialog(media_key):
         xbmcplugin.endOfDirectory(addon_handle)
 
 
-def resolve_media(media_key, lang=None):
+def resolve_media(media_key, lang=None, nondubbed=False):
     """Resolve to a playable URL for a media key name, as found in tv.jw.org URLs
 
     :param media_key: string, media to play
     :param lang: string, language code
+    :param nondubbed: Play in English, with localized subtitles
 
     When language is specified, play video in that language, and save language in history
     """
-    if lang:
+    if nondubbed:
+        lang = 'E'
+    elif lang:
         save_language_history(lang)
 
     url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or language) + '/' + media_key
     data = get_json(url)
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
+
+    if nondubbed:
+        l_url = 'https://data.jw-api.org/mediator/v1/media-items/' + language + '/' + media_key
+        l_data = get_json(l_url)
+        l_media = Media()
+        l_media.parse_media(l_data['media'][0], censor_hidden=False)
+        if l_media:
+            media.subtitles = l_media.subtitles
+
     if media:
         xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
     else:
@@ -712,6 +741,8 @@ def main():
         search_page()
     elif mode == M_PLAY:
         resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
+    elif mode == M_PLAY_NODUB:
+        resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE), nondubbed=True)
     elif mode == M_BROWSE:
         sub_level_page(args[Q_CATKEY])
     elif mode == M_STREAM:
