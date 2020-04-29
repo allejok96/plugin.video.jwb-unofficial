@@ -1,24 +1,48 @@
 # Licensed under the Apache License, Version 2.0
+from __future__ import unicode_literals, division, print_function, absolute_import
+
 import sys
 import os.path
-import time
-import urllib
-import urllib2
-import urlparse
+import json
 import random
 
-import xbmcplugin
-import xbmcaddon
-import xbmcgui
-import xbmc
-from xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
+from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
+from kodi_six.xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
 
 try:
-    import simplejson as json
-except ImportError:
-    import json
+    from urllib.error import HTTPError, URLError
+    from urllib.request import urlopen, Request
+    from urllib.parse import parse_qs, urlencode
+    from time import strftime
 
-    xbmc.log('plugin.video.jwb-unofficial: simplejson not found, falling back to default json')
+except ImportError:
+    from urlparse import parse_qs as _parse_qs
+    from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib import urlencode as _urlencode
+    from time import strftime as _strftime
+
+
+    # Py2: urlencode only accepts byte strings
+    def urlencode(query):
+        # Dict[str, str] -> str
+        return py2_decode(_urlencode({py2_encode(param): py2_encode(arg) for param, arg in query.items()}))
+
+
+    # Py2: even if parse_qs accepts unicode, the return makes no sense
+    def parse_qs(qs):
+        # str -> Dict[str, List[str]]
+        return {py2_decode(param): [py2_decode(a) for a in args]
+                for param, args in _parse_qs(py2_encode(qs)).items()}
+
+
+    # Py2: strftime returns byte string
+    def strftime(format, t=None):
+        return py2_decode(_strftime(py2_encode(format)))
+
+
+    # Py2: When using str, we mean unicode string
+    str = unicode
+
 
 # Set to True for performance profiling
 CPROFILE = False
@@ -331,8 +355,8 @@ class Media(Directory):
             info_dict['plot'] = self.description
 
         if self.publish_date:
-            info_dict['date'] = time.strftime('%d.%m.%Y', self.publish_date)
-            info_dict['year'] = time.strftime('%Y', self.publish_date)
+            info_dict['date'] = strftime('%d.%m.%Y', self.publish_date)
+            info_dict['year'] = strftime('%Y', self.publish_date)
 
         try:
             # Kodi v18
@@ -394,6 +418,7 @@ def getitem(obj, *keys, **kwargs):
             # Could not get value, try next
             continue
 
+    # Py2: get() unicode is ok
     if kwargs.get('fail', False):
         # No keys existed for this level, return to parent
         raise KeyError
@@ -415,10 +440,10 @@ def get_json(url, on_fail='exit'):
     try:
         if type(url) == str:
             log('opening ' + url, LOGINFO)
-        elif isinstance(url, urllib2.Request):
+        elif isinstance(url, Request):
             log('opening ' + url.get_full_url(), LOGINFO)
-        data = urllib2.urlopen(url).read().decode('utf-8')
-    except urllib2.URLError as e:
+        data = urlopen(url).read().decode('utf-8')
+    except URLError as e:
         if on_fail == 'log':
             log('{}: {}'.format(url, e.reason), LOGWARNING)
             return None
@@ -443,7 +468,7 @@ def get_jwt_token(update=False):
     if not token or update is True:
         log('requesting new authentication token from tv.jw.org', LOGINFO)
         url = 'https://tv.jw.org/tokens/web.jwt'
-        token = urllib2.urlopen(url).read().decode('utf-8')
+        token = urlopen(url).read().decode('utf-8')
         if token != '':
             addon.setSetting('jwt_token', token)
     return token
@@ -571,7 +596,7 @@ def language_dialog(media_key=None, valid_langs=None):
             request = request_to_self({Q_MODE: M_SET_LANG, Q_LANGCODE: code})
             dialog_actions.append('RunPlugin(' + request + ')')
 
-    selection = xbmcgui.Dialog().select(None, dialog_strings)
+    selection = xbmcgui.Dialog().select('', dialog_strings)
     if selection >= 0:
         xbmc.executebuiltin(dialog_actions[selection])
 
@@ -605,14 +630,14 @@ def search_page():
 
         search_string = kb.getText()
         url = 'https://data.jw-api.org/search/query?'
-        query = urllib.urlencode({'q': search_string, 'lang': language, 'limit': 24})
+        query = urlencode({'q': search_string, 'lang': language, 'limit': 24})
         headers = {'Authorization': 'Bearer ' + get_jwt_token()}
         try:
-            data = get_json(urllib2.Request(url + query, headers=headers), on_fail='error')
-        except urllib2.HTTPError as e:
+            data = get_json(Request(url + query, headers=headers), on_fail='error')
+        except HTTPError as e:
             if e.code == 401:
                 headers = {'Authorization': 'Bearer ' + get_jwt_token(True)}
-                data = get_json(urllib2.Request(url + query, headers=headers))
+                data = get_json(Request(url + query, headers=headers))
             else:
                 raise e
 
@@ -666,7 +691,7 @@ def request_to_self(query):
     """Return a string with an URL request to the add-on itself"""
 
     # argv[0] is path to the plugin
-    return sys.argv[0] + '?' + urllib.urlencode(query)
+    return sys.argv[0] + '?' + urlencode(query)
 
 
 def main():
@@ -702,7 +727,7 @@ if __name__ == '__main__':
     # The awkward way Kodi passes arguments to the add-on...
     # argv[2] is a URL query string, probably passed by request_to_self()
     # example: ?mode=play&media=ThisVideo
-    args = urlparse.parse_qs(sys.argv[2][1:])
+    args = parse_qs(sys.argv[2][1:])
     # parse_qs puts the values in a list, so we grab the first value for each key
     args = {k: v[0] for k, v in args.items()}
 
@@ -710,7 +735,7 @@ if __name__ == '__main__':
         import cProfile
 
         output = '{}/{}-{}-{}.cprof'.format(CPROFILE_OUTPUT_DIR,
-                                            time.strftime('%y%m%d%H%M%S'),
+                                            strftime('%y%m%d%H%M%S'),
                                             args.get(Q_MODE),
                                             args.get(Q_CATKEY) or args.get(Q_MEDIAKEY))
         log('saving cProfile output to ' + output)

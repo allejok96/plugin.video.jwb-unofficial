@@ -8,6 +8,7 @@
   <requires>
     <!-- Gotham 13.x -->
     <import addon="xbmc.addon" version="13.0.0" />
+    <import addon="script.module.kodi-six"/>
   </requires>
 
   <extension point="xbmc.python.pluginsource" library="addon.py">
