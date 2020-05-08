@@ -2,7 +2,7 @@
 <settings>
     <setting  id="language" enable="false" type="text" default="E" label="30010" />
     <setting  id="lang_history" type="text" default="E" visible="false" />
-    <setting  label="30011" type="action" action="RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=languages)"/>
+    <setting  label="30011" type="action" option="close" action="RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=languages)"/>
     <!-- The order is backwards, but changing it would perhaps break setting with update -->
     <setting  id="video_res" type="enum" default="0"
               lvalues="30005|30004|30003|30002|30001" label="30000" />
