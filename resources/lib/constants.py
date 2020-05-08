@@ -31,6 +31,7 @@ class Query(object):
     CATKEY = 'category'
     LANGCODE = 'language'
     LANGFILTER = 'filter'
+    LANGNAME = 'lname'
     MEDIAKEY = 'media'
     STREAMKEY = 'category'
 
@@ -52,10 +53,11 @@ class SettingID(object):
     RESOLUTION = 'video_res'
     HARD_SUBTITLES = 'subtitles'
     LANGUAGE = 'language'
+    LANG_HIST = 'lang_history'
+    LANG_NAME = 'lang_name'
     TOKEN = 'jwt_token'
     START_WARNING = 'startupmsg'
     SEARCH_TRANSL = 'search_tr'
-    LANG_HIST = 'lang_history'
 
 
 class LocalizedStringID(AttributeProxy):

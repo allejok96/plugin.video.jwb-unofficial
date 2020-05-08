@@ -468,6 +468,22 @@ def top_level_page():
                         nolabel=S.I_UNDERSTAND, yeslabel=S.MORE_INFO):
             dialog.textviewer(S.THEO_WARN, S.DISCLAIMER)
 
+    # Auto language
+    isolang = xbmc.getLanguage(xbmc.ISO_639_1)
+    if not addon.getSetting(SettingID.LANG_HIST):
+        # Write English to language history, so this code only runs once
+        addon.setSetting(SettingID.LANG_HIST, 'E')
+        # If Kodi is in foreign language
+        if isolang != 'en':
+            data = get_json('http://data.jw-api.org/mediator/v1/languages/E/web')
+            for l in data['languages']:
+                if l['locale'] == isolang:
+                    # Save setting, and update for this this instance
+                    set_language(l['code'], l['name'] + ' / ' + l['vernacular'])
+                    global global_lang
+                    global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
+                    break
+
     data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '?detailed=True')
 
     for c in data['categories']:
@@ -576,7 +592,10 @@ def language_dialog(media_key=None, valid_langs=None):
                 Q.LANGCODE: code})
             dialog_actions.append('PlayMedia(' + request + ')')
         else:
-            request = request_to_self({Q.MODE: M.SET_LANG, Q.LANGCODE: code})
+            request = request_to_self({
+                Q.MODE: M.SET_LANG,
+                Q.LANGNAME: name,
+                Q.LANGCODE: code})
             dialog_actions.append('RunPlugin(' + request + ')')
 
     selection = xbmcgui.Dialog().select('', dialog_strings)
@@ -584,10 +603,11 @@ def language_dialog(media_key=None, valid_langs=None):
         xbmc.executebuiltin(dialog_actions[selection])
 
 
-def set_language(lang):
+def set_language(lang, name):
     """Save a language to setting and history"""
 
     addon.setSetting(SettingID.LANGUAGE, lang)
+    addon.setSetting(SettingID.LANG_NAME, name)
     save_language_history(lang)
     # Forget about the translation of "Search"
     addon.setSetting(SettingID.SEARCH_TRANSL, '')
@@ -701,9 +721,7 @@ if __name__ == '__main__':
 
     video_res = [1080, 720, 480, 360, 240][int(addon.getSetting(SettingID.RESOLUTION))]
     hard_subtitles_setting = addon.getSetting(SettingID.HARD_SUBTITLES) == 'true'
-    global_lang = addon.getSetting(SettingID.LANGUAGE)
-    if not global_lang:
-        global_lang = 'E'
+    global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
 
     # The awkward way Kodi passes arguments to the add-on...
     # argv[2] is a URL query string, probably passed by request_to_self()
@@ -722,7 +740,7 @@ if __name__ == '__main__':
     elif mode == M.LANGUAGES:
         language_dialog(args.get(Q.MEDIAKEY), args.get(Q.LANGFILTER))
     elif mode == M.SET_LANG:
-        set_language(args[Q.LANGCODE])
+        set_language(args[Q.LANGCODE], args[Q.LANGNAME])
     elif mode == M.HIDDEN:
         hidden_media_dialog(args[Q.MEDIAKEY])
     elif mode == M.SEARCH:
