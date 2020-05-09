@@ -30,7 +30,6 @@ class Query(object):
     MODE = 'mode'
     CATKEY = 'category'
     LANGCODE = 'language'
-    LANGFILTER = 'filter'
     LANGNAME = 'lname'
     MEDIAKEY = 'media'
     STREAMKEY = 'category'

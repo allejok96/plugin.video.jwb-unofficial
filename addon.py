@@ -143,13 +143,6 @@ class Directory(object):
 
         return li
 
-    def listitem_with_path(self):
-        """Return ListItem with path set, because apparently setPath() is slow"""
-
-        li = self.listitem()
-        li.setPath(self.url)
-        return li
-
     def add_item_in_kodi(self):
         """Adds this as a directory item in Kodi"""
 
@@ -158,27 +151,25 @@ class Directory(object):
 
 
 class Media(Directory):
-    def __init__(self, duration=None, media_type='video', languages=None, publish_date=None,
+    def __init__(self, duration=None, media_type='video', publish_date=None,
                  size=None, is_folder=False, subtitles=None, **kwargs):
         """An object containing metadata for a video or audio recording"""
 
         super(Media, self).__init__(**kwargs)
         self.media_type = media_type
         self.size = size
-        self.languages = languages
-        if self.languages is None:
-            self.languages = []
         self.__publish_date = publish_date
         self.__duration = duration
         self.is_folder = is_folder
         self.subtitles = subtitles
+        self.resolved_url = None
 
     def __bool__(self):
         """Is everything ok?"""
 
         if self.hidden and not self.key:
             log('hidden media has no "key" metadata, skipping', LOGWARNING)
-        elif not self.hidden and not self.url:
+        elif not self.hidden and not self.resolved_url:
             log('media has no playable files, skipping', LOGWARNING)
         else:
             return True
@@ -193,6 +184,7 @@ class Media(Directory):
         """
         self.parse_common(data)
         self.key = data.get('languageAgnosticNaturalKey')
+        self.url = request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: self.key})
 
         if self.hidden and censor_hidden:
             # Reset to these values
@@ -200,13 +192,12 @@ class Media(Directory):
                           url=request_to_self({Q.MODE: M.HIDDEN, Q.MEDIAKEY: self.key}),
                           is_folder=True)
         else:
-            self.url, self.size, self.subtitles = self.get_preferred_media_file(data.get('files', []))
+            self.resolved_url, self.size, self.subtitles = self.get_preferred_media_file(data.get('files', []))
             self.title = data.get('title')
             if data.get('type') == 'audio':
                 self.media_type = 'music'
             self.duration = data.get('duration')
             self.publish_date = data.get('firstPublished')
-            self.languages = data.get('availableLanguages', [])
 
     def parse_hits(self, data):
         """Create an instance of Media out of search results
@@ -337,9 +328,9 @@ class Media(Directory):
         li.setArt(art_dict)
         li.setInfo(self.media_type, info_dict)
 
-        if self.url:
-            # For some reason needed by xbmcplugin.setResolvedUrl
-            li.setProperty("isPlayable", "true")
+        # For some reason needed for listitems that will open xbmcplugin.setResolvedUrl
+        li.setProperty('isPlayable', 'true')
+
         if self.subtitles:
             li.setSubtitles([self.subtitles])
 
@@ -348,8 +339,6 @@ class Media(Directory):
         # Play in other language context menu
         if self.key:
             query = {Q.MODE: M.LANGUAGES, Q.MEDIAKEY: self.key}
-            if self.languages:
-                query[Q.LANGFILTER] = ' '.join(self.languages)
             # Note: Use RunPlugin instead of RunAddon, because an add-on assumes a folder view
             action = 'RunPlugin(' + request_to_self(query) + ')'
             context_menu.append((S.PLAY_LANG, action))
@@ -357,14 +346,19 @@ class Media(Directory):
         # Play in English with subtitles
         if self.key and self.subtitles and global_lang != 'E':
             query = {Q.MODE: M.PLAY_NODUB, Q.MEDIAKEY: self.key}
-            if self.languages:
-                query[Q.LANGFILTER] = ' '.join(self.languages)
             action = 'PlayMedia(' + request_to_self(query) + ')'
             context_menu.append((S.PLAY_ENG, action))
 
         if context_menu:
             li.addContextMenuItems(context_menu)
 
+        return li
+
+    def listitem_with_resolved_url(self):
+        """Return ListItem with path set, because apparently setPath() is slow"""
+
+        li = self.listitem()
+        li.setPath(self.resolved_url)
         return li
 
 
@@ -558,16 +552,15 @@ def shuffle_category(key):
         media = Media()
         media.parse_media(md, censor_hidden=False)
         if media and not media.hidden:
-            pl.add(media.url, media.listitem_with_path())
+            pl.add(media.resolved_url, media.listitem())
 
     xbmc.Player().play(pl)
 
 
-def language_dialog(media_key=None, valid_langs=None):
+def language_dialog(media_key=None):
     """Display a list of languages and set the global language setting
 
     :param media_key: play this media file instead of changing global setting
-    :param valid_langs: space separated list of language codes, for filtering
     """
     # Note: the list from jw.org is already sorted by ['name']
     data = get_json('http://data.jw-api.org/mediator/v1/languages/' + global_lang + '/web')
@@ -578,8 +571,13 @@ def language_dialog(media_key=None, valid_langs=None):
     history = addon.getSetting(SettingID.LANG_HIST).split()
     languages = [l for h in history for l in languages if l[0] == h] + languages
 
-    if valid_langs:
-        languages = [l for l in languages if l[0] in valid_langs.split()]
+    if media_key:
+        # Lookup media, and only show available languages
+        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+        data = get_json(url)
+        available_langs = data['media'][0].get('availableLanguages')
+        if available_langs:
+            languages = [l for l in languages if l[0] in available_langs]
 
     dialog_strings = []
     dialog_actions = []
@@ -697,7 +695,7 @@ def resolve_media(media_key, lang=None, nondubbed=False):
             media.subtitles = l_media.subtitles
 
     if media:
-        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
+        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_resolved_url())
     else:
         raise RuntimeError
 
@@ -738,7 +736,7 @@ if __name__ == '__main__':
     if mode is None:
         top_level_page()
     elif mode == M.LANGUAGES:
-        language_dialog(args.get(Q.MEDIAKEY), args.get(Q.LANGFILTER))
+        language_dialog(args.get(Q.MEDIAKEY))
     elif mode == M.SET_LANG:
         set_language(args[Q.LANGCODE], args[Q.LANGNAME])
     elif mode == M.HIDDEN:
