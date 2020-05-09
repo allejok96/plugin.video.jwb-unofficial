@@ -458,9 +458,11 @@ def top_level_page():
 
     if addon.getSetting(SettingID.START_WARNING) == 'true':
         dialog = xbmcgui.Dialog()
-        if dialog.yesno(S.THEO_WARN, S.NOT_AFFILIATED,
-                        nolabel=S.I_UNDERSTAND, yeslabel=S.MORE_INFO):
-            dialog.textviewer(S.THEO_WARN, S.DISCLAIMER)
+        try:
+            dialog.textviewer(S.THEO_WARN, S.DISCLAIMER)  # Kodi v16
+        except AttributeError:
+            dialog.ok(S.THEO_WARN, S.DISCLAIMER)
+        addon.setSetting(SettingID.START_WARNING, 'false')
 
     # Auto language
     isolang = xbmc.getLanguage(xbmc.ISO_639_1)

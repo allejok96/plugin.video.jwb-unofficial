@@ -68,25 +68,10 @@ msgctxt "#30016"
 msgid "Theocratic warning"
 msgstr ""
 
-# not affiliated
-msgctxt "#30017"
-msgid "This add-on is not supported by jw.org"
-msgstr ""
-
-# i understand
-msgctxt "#30018"
-msgid "I understand"
-msgstr ""
-
-# more info
-msgctxt "#30019"
-msgid "More info"
-msgstr ""
-
 # disclaimer
 msgctxt "#30020"
-msgid "This add-on is not supported by, or affiliated with the Watchtower society in any way.\n\n"
-"Please use the official JW Broadcasting app for your device, if available.\n"
+msgid "This add-on is not supported by, or affiliated with the Watchtower society in any way.\n"
+"Please use the official JW Broadcasting app for your device, if available.\n\n"
 "Or consider buying a device that supports the JW Broadcasting or JW Library app.\n\n"
 "Since this add-on is homemade, you must choose if you are willing to trust it.\n"
 "- The add-on may not work as intended.\n"
@@ -94,7 +79,7 @@ msgid "This add-on is not supported by, or affiliated with the Watchtower societ
 "- The spiritual food could in absolute worst case be tampered with.\n\n"
 "Please read the following Watchtower article before you make up your mind:\n"
 "[B]w18 April page 30[/B]\n\n"
-"You can turn off this warning in the add-on settings."
+"This message will only be shown once."
 
 # play lang
 msgctxt "#30021"
