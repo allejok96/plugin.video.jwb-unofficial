@@ -65,20 +65,6 @@ class Directory(object):
         self.is_folder = is_folder
         self.streamable = streamable
 
-    def __bool__(self):
-        """Is everything ok?"""
-
-        # Never show hidden directories
-        if self.hidden:
-            return False
-        elif not self.key:
-            log('category has no "key" metadata, skipping', LOGWARNING)
-            return False
-        else:
-            return True
-
-    __nonzero__ = __bool__
-
     def parse_common(self, data):
         """Constructor from common metadata"""
         self.description = data.get('description')
@@ -118,7 +104,8 @@ class Directory(object):
         if 'StreamThisChannelEnabled' in tags or 'AllowShuffleInCategoryHeader' in tags:
             self.streamable = True
 
-        self.url = request_to_self({Q.MODE: M.BROWSE, Q.STREAMKEY: self.key})
+        if self.key:
+            self.url = request_to_self({Q.MODE: M.BROWSE, Q.STREAMKEY: self.key})
 
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
@@ -164,18 +151,6 @@ class Media(Directory):
         self.subtitles = subtitles
         self.resolved_url = None
 
-    def __bool__(self):
-        """Is everything ok?"""
-
-        if self.hidden and not self.key:
-            log('hidden media has no "key" metadata, skipping', LOGWARNING)
-        elif not self.hidden and not self.resolved_url:
-            log('media has no playable files, skipping', LOGWARNING)
-        else:
-            return True
-
-    __nonzero__ = __bool__
-
     def parse_media(self, data, censor_hidden=True):
         """Constructor taking jw media metadata
 
@@ -184,7 +159,8 @@ class Media(Directory):
         """
         self.parse_common(data)
         self.key = data.get('languageAgnosticNaturalKey')
-        self.url = request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: self.key})
+        if self.key:
+            self.url = request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: self.key})
 
         if self.hidden and censor_hidden:
             # Reset to these values
@@ -343,12 +319,6 @@ class Media(Directory):
             action = 'RunPlugin(' + request_to_self(query) + ')'
             context_menu.append((S.PLAY_LANG, action))
 
-        # Play in English with subtitles
-        if self.key and self.subtitles and global_lang != 'E':
-            query = {Q.MODE: M.PLAY_NODUB, Q.MEDIAKEY: self.key}
-            action = 'PlayMedia(' + request_to_self(query) + ')'
-            context_menu.append((S.PLAY_ENG, action))
-
         if context_menu:
             li.addContextMenuItems(context_menu)
 
@@ -485,7 +455,7 @@ def top_level_page():
     for c in data['categories']:
         d = Directory(fanart=default_fanart)
         d.parse_category(c)
-        if d:
+        if d.url and not d.hidden:
             d.add_item_in_kodi()
 
     # Get "search" translation from internet - overkill but so cool
@@ -521,13 +491,13 @@ def sub_level_page(sub_level):
         for sc in data['subcategories']:
             d = Directory()
             d.parse_category(sc)
-            if d:
+            if d.url and not d.hidden:
                 d.add_item_in_kodi()
     if 'media' in data:
         for md in data['media']:
             m = Media()
             m.parse_media(md)
-            if m:
+            if m.url:
                 m.add_item_in_kodi()
 
     xbmcplugin.endOfDirectory(addon_handle)
@@ -553,7 +523,7 @@ def shuffle_category(key):
     for md in all_media:
         media = Media()
         media.parse_media(md, censor_hidden=False)
-        if media and not media.hidden:
+        if media.url and not media.hidden:
             pl.add(media.resolved_url, media.listitem())
 
     xbmc.Player().play(pl)
@@ -647,7 +617,7 @@ def search_page():
         for hd in data['hits']:
             media = Media()
             media.parse_hits(hd)
-            if media:
+            if media.url:
                 media.add_item_in_kodi()
 
         xbmcplugin.endOfDirectory(addon_handle)
@@ -662,41 +632,37 @@ def hidden_media_dialog(media_key):
         data = get_json(url)
         media = Media()
         media.parse_media(data['media'][0], censor_hidden=False)
-        if media:
+        if media.url:
             media.add_item_in_kodi()
         else:
             raise RuntimeError
         xbmcplugin.endOfDirectory(addon_handle)
 
 
-def resolve_media(media_key, lang=None, nondubbed=False):
-    """Resolve to a playable URL for a media key name, as found in tv.jw.org URLs
+def resolve_media(media_key, lang=None):
+    """Resolve to a playable URL for a media key name
 
-    :param media_key: string, media to play
+    :param media_key: string, id of media to play
     :param lang: string, language code
-    :param nondubbed: Play in English, with localized subtitles
 
-    When language is specified, play video in that language, and save language in history
+    When language is specified, play video in that language, with subtitles in "global language"
     """
-    if nondubbed:
-        lang = 'E'
-    elif lang:
-        save_language_history(lang)
-
     url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or global_lang) + '/' + media_key
     data = get_json(url)
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
 
-    if nondubbed:
-        l_url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
-        l_data = get_json(l_url)
-        l_media = Media()
-        l_media.parse_media(l_data['media'][0], censor_hidden=False)
-        if l_media:
-            media.subtitles = l_media.subtitles
+    if lang:
+        save_language_history(lang)
 
-    if media:
+        # Add subtitles from the global language too
+        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+        data = get_json(url, on_fail='log')
+        global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
+        if global_lang_subs:
+            media.subtitles = global_lang_subs
+
+    if media.resolved_url:
         xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_resolved_url())
     else:
         raise RuntimeError
@@ -747,8 +713,6 @@ if __name__ == '__main__':
         search_page()
     elif mode == M.PLAY:
         resolve_media(args[Q.MEDIAKEY], args.get(Q.LANGCODE))
-    elif mode == M.PLAY_NODUB:
-        resolve_media(args[Q.MEDIAKEY], args.get(Q.LANGCODE), nondubbed=True)
     elif mode == M.BROWSE:
         sub_level_page(args[Q.CATKEY])
     elif mode == M.STREAM:

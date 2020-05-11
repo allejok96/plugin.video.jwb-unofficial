@@ -86,11 +86,6 @@ msgctxt "#30021"
 msgid "Play in another language"
 msgstr ""
 
-# play eng
-msgctxt "#30022"
-msgid "Play with English audio"
-msgstr ""
-
 # shuffle cat
 msgctxt "#30023"
 msgid "Shuffle this category"

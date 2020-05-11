@@ -44,7 +44,6 @@ class Mode(object):
     PLAY = 'play'
     BROWSE = 'browse'
     STREAM = 'stream'
-    PLAY_NODUB = 'nondubbed'
 
 
 class SettingID(object):
@@ -77,7 +76,6 @@ class LocalizedStringID(AttributeProxy):
     THEO_WARN = 30016
     DISCLAIMER = 30020
     PLAY_LANG = 30021
-    PLAY_ENG = 30022
     SHUFFLE_CAT = 30023
     AUDIO_ONLY = 30024
     CONN_ERR = 30025
