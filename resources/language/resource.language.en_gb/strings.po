@@ -71,7 +71,7 @@ msgstr ""
 # disclaimer
 msgctxt "#30020"
 msgid "This add-on is not supported by, or affiliated with the Watchtower society in any way.\n"
-"Please use the official JW Broadcasting app for your device, if available.\n\n"
+"Please use the official JW Broadcasting app for your device, if available.\n"
 "Or consider buying a device that supports the JW Broadcasting or JW Library app.\n\n"
 "Since this add-on is homemade, you must choose if you are willing to trust it.\n"
 "- The add-on may not work as intended.\n"
