@@ -5,9 +5,9 @@ import sys
 import os.path
 import json
 import random
+import traceback
 
 from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
-from kodi_six.xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
 
 from resources.lib.constants import Query as Q, Mode as M, SettingID, LocalizedStringID
 
@@ -46,8 +46,11 @@ except ImportError:
     str = unicode
 
 
-def log(msg, level=LOGDEBUG):
-    xbmc.log(addon_id + ': ' + msg, level)
+def log(msg, level=xbmc.LOGDEBUG):
+    """Write to log file"""
+
+    for line in msg.splitlines():
+        xbmc.log(addon.getAddonInfo('id') + ': ' + line, level)
 
 
 class Directory(object):
@@ -233,7 +236,7 @@ class Media(Directory):
                 self.__duration = int(t[0]) * 60 + int(t[1])
             elif len(t) == 1:
                 self.__duration = int(t[0])
-        except (ValueError, TypeError):
+        except (AttributeError, ValueError, TypeError):
             pass
 
     @staticmethod
@@ -374,51 +377,40 @@ def getitem(obj, *keys, **kwargs):
         return kwargs.get('default')
 
 
-def get_json(url, on_fail='exit'):
+def get_json(url, ignore_errors=False, catch_401=True):
     """Fetch JSON data from an URL and return it as a Python object
 
     :param url: URL to open or a Request object
-    :param on_fail: string, what to do on a URLError: exit, log, error
+    :param ignore_errors: IO exceptions will only be logged, don't exit
+    :param catch_401: If False HTTP 401 will be passed on instead of caught
 
-    exit - issue a notification to Kodi and exit the plugin instance (default)
-    log - print to the log and return None
-    error - raise an error
+    IF an IO exception occurs a message will be displayed and the script exits.
     """
+    if isinstance(url, Request):
+        log('opening {}'.format(url.get_full_url()), xbmc.LOGINFO)
+    else:
+        log('opening {}'.format(url), xbmc.LOGINFO)
+
     try:
-        if type(url) == str:
-            log('opening ' + url, LOGINFO)
-        elif isinstance(url, Request):
-            log('opening ' + url.get_full_url(), LOGINFO)
-        data = urlopen(url).read().decode('utf-8')
-    except URLError as e:
-        if on_fail == 'log':
-            log('{}: {}'.format(url, e.reason), LOGWARNING)
+        data = urlopen(url).read().decode('utf-8')  # urlopen returns bytes
+    # Catches URLError, HTTPError, SSLError ...
+    except IOError as e:
+        if ignore_errors:
+            log(traceback.format_exc(), level=xbmc.LOGWARNING)
             return None
-        elif on_fail == 'exit':
-            log('{}: {}'.format(url, e.reason), LOGERROR)
+        elif not catch_401 and isinstance(e, HTTPError) and e.code == 401:
+            raise
+        else:
+            log(traceback.format_exc(), level=xbmc.LOGERROR)
             xbmcgui.Dialog().notification(
                 addon.getAddonInfo('name'),
                 S.CONN_ERR,
                 icon=xbmcgui.NOTIFICATION_ERROR)
             # Don't raise an error, it will just generate another cryptic notification in Kodi
             exit()
-        else:
-            raise e
-    else:
-        return json.loads(data)
+            raise # to make PyCharm happy
 
-
-def get_jwt_token(update=False):
-    """Get temporary authentication token from memory, or jw.org"""
-
-    token = addon.getSetting(SettingID.TOKEN)
-    if not token or update is True:
-        log('requesting new authentication token from tv.jw.org', LOGINFO)
-        url = 'https://tv.jw.org/tokens/web.jwt'
-        token = urlopen(url).read().decode('utf-8')
-        if token != '':
-            addon.setSetting(SettingID.TOKEN, token)
-    return token
+    return json.loads(data)
 
 
 def top_level_page():
@@ -462,7 +454,7 @@ def top_level_page():
     # Try cache first, to speed up loading
     search_label = addon.getSetting(SettingID.SEARCH_TRANSL)
     if not search_label:
-        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + global_lang, on_fail='log')
+        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + global_lang, ignore_errors=True)
         search_label = getitem(data, 'translations', global_lang, 'hdgSearch', default='Search')
         addon.setSetting(SettingID.SEARCH_TRANSL, search_label)
     d = Directory(url=request_to_self({Q.MODE: M.SEARCH}), title=search_label, fanart=default_fanart,
@@ -604,15 +596,27 @@ def search_page():
         search_string = kb.getText()
         url = 'https://data.jw-api.org/search/query?'
         query = urlencode({'q': search_string, 'lang': global_lang, 'limit': 24})
-        headers = {'Authorization': 'Bearer ' + get_jwt_token()}
+
         try:
-            data = get_json(Request(url + query, headers=headers), on_fail='error')
-        except HTTPError as e:
-            if e.code == 401:
-                headers = {'Authorization': 'Bearer ' + get_jwt_token(True)}
-                data = get_json(Request(url + query, headers=headers))
-            else:
-                raise e
+            token = addon.getSetting(SettingID.TOKEN)
+            if not token:
+                raise RuntimeError
+
+            headers = {'Authorization': 'Bearer ' + token}
+            data = get_json(Request(url + query, headers=headers), catch_401=False)
+
+        except (HTTPError, RuntimeError):
+            # Get and save new token
+            log('requesting new authentication token from jw.org', xbmc.LOGINFO)
+            token_url = 'https://tv.jw.org/tokens/web.jwt'
+            token = urlopen(token_url).read().decode('utf-8')
+            if not token:
+                raise RuntimeError('failed to get search authentication token')
+
+            addon.setSetting(SettingID.TOKEN, token)
+
+            headers = {'Authorization': 'Bearer ' + token}
+            data = get_json(Request(url + query, headers=headers))
 
         for hd in data['hits']:
             media = Media()
@@ -657,7 +661,7 @@ def resolve_media(media_key, lang=None):
 
         # Add subtitles from the global language too
         url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
-        data = get_json(url, on_fail='log')
+        data = get_json(url, ignore_errors=True)
         global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
         if global_lang_subs:
             media.subtitles = global_lang_subs
