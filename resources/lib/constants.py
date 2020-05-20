@@ -49,7 +49,7 @@ class Mode(object):
 class SettingID(object):
     """Setting IDs in Kodi"""
     RESOLUTION = 'video_res'
-    HARD_SUBTITLES = 'subtitles'
+    SUBTITLES = 'subtitles'
     LANGUAGE = 'language'
     LANG_HIST = 'lang_history'
     LANG_NAME = 'lang_name'

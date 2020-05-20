@@ -5,6 +5,7 @@ import sys
 import os.path
 import json
 import random
+import time
 import traceback
 
 from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
@@ -263,7 +264,7 @@ class Media(Directory):
             if 0 < res <= video_res:
                 rank += resolution_not_too_big
             # 'subtitled' only applies to hardcoded video subtitles
-            if f.get('subtitled') == hard_subtitles_setting:
+            if f.get('subtitled') == subtitle_setting:
                 rank += subtitles_matches_pref
             files.append((rank, f))
         files.sort()
@@ -408,7 +409,7 @@ def get_json(url, ignore_errors=False, catch_401=True):
                 icon=xbmcgui.NOTIFICATION_ERROR)
             # Don't raise an error, it will just generate another cryptic notification in Kodi
             exit()
-            raise # to make PyCharm happy
+            raise  # to make PyCharm happy
 
     return json.loads(data)
 
@@ -668,6 +669,16 @@ def resolve_media(media_key, lang=None):
 
     if media.resolved_url:
         xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_resolved_url())
+        # Ugly way to turn on/off subtitles (without changing the global Kodi setting), try it for 10 sec
+        # TODO change this if made possible in the future
+        player = xbmc.Player()
+        for i in range(1, 10):
+            if player.getAvailableSubtitleStreams():
+                # Subtitles are always on if language is explicitly specified
+                player.showSubtitles(bool(lang) or subtitle_setting)
+                break
+            time.sleep(1)
+
     else:
         raise RuntimeError
 
@@ -690,7 +701,7 @@ if __name__ == '__main__':
     S = LocalizedStringID(addon.getLocalizedString)
 
     video_res = [1080, 720, 480, 360, 240][int(addon.getSetting(SettingID.RESOLUTION))]
-    hard_subtitles_setting = addon.getSetting(SettingID.HARD_SUBTITLES) == 'true'
+    subtitle_setting = addon.getSetting(SettingID.SUBTITLES) == 'true'
     global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
 
     # The awkward way Kodi passes arguments to the add-on...

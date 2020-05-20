@@ -46,7 +46,7 @@ msgstr ""
 
 # disp sub
 msgctxt "#30012"
-msgid "Display hardcoded subtitles when available"
+msgid "Display subtitles by default"
 msgstr ""
 
 # hidden
