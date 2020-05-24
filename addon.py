@@ -1,63 +1,57 @@
 # Licensed under the Apache License, Version 2.0
+from __future__ import unicode_literals, division, print_function, absolute_import
+
 import sys
 import os.path
-import time
-import urllib
-import urllib2
-import urlparse
+import json
 import random
+import time
+import traceback
 
-import xbmcplugin
-import xbmcaddon
-import xbmcgui
-import xbmc
-from xbmc import LOGDEBUG, LOGINFO, LOGNOTICE, LOGWARNING, LOGERROR
+from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
+
+from resources.lib.constants import Query as Q, Mode as M, SettingID, LocalizedStringID
 
 try:
-    import simplejson as json
+    from urllib.error import HTTPError, URLError
+    from urllib.request import urlopen, Request
+    from urllib.parse import parse_qs, urlencode
+    from time import strftime
+
 except ImportError:
-    import json
-
-    xbmc.log('plugin.video.jwb-unofficial: simplejson not found, falling back to default json')
-
-# Set to True for performance profiling
-CPROFILE = False
-CPROFILE_OUTPUT_DIR = '/tmp'
-
-# Static names for valid URL queries and modes, to simplify for the IDE
-Q_MODE = 'mode'
-Q_CATKEY = 'category'
-Q_LANGCODE = 'language'
-Q_LANGFILTER = 'filter'
-Q_MEDIAKEY = 'media'
-Q_STREAMKEY = 'category'
-M_LANGUAGES = 'languages'
-M_SET_LANG = 'set_language'
-M_SEARCH = 'search'
-M_HIDDEN = 'ask_hidden'
-M_PLAY = 'play'
-M_BROWSE = 'browse'
-M_STREAM = 'stream'
-
-# To send stuff to the screen
-addon_handle = int(sys.argv[1])
-# To get settings and info
-addon = xbmcaddon.Addon()
-# For logging purpose
-addon_id = addon.getAddonInfo('id')
-# To to get translated strings
-getstr = addon.getLocalizedString
-
-vres = addon.getSetting('video_res')
-video_res = [1080, 720, 480, 360, 240][int(vres)]
-subtitles = addon.getSetting('subtitles') == 'true'
-language = addon.getSetting('language')
-if not language:
-    language = 'E'
+    from urlparse import parse_qs as _parse_qs
+    from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib import urlencode as _urlencode
+    from time import strftime as _strftime
 
 
-def log(msg, level=LOGDEBUG):
-    xbmc.log(addon_id + ': ' + msg, level)
+    # Py2: urlencode only accepts byte strings
+    def urlencode(query):
+        # Dict[str, str] -> str
+        return py2_decode(_urlencode({py2_encode(param): py2_encode(arg) for param, arg in query.items()}))
+
+
+    # Py2: even if parse_qs accepts unicode, the return makes no sense
+    def parse_qs(qs):
+        # str -> Dict[str, List[str]]
+        return {py2_decode(param): [py2_decode(a) for a in args]
+                for param, args in _parse_qs(py2_encode(qs)).items()}
+
+
+    # Py2: strftime returns byte string
+    def strftime(format, t=None):
+        return py2_decode(_strftime(py2_encode(format)))
+
+
+    # Py2: When using str, we mean unicode string
+    str = unicode
+
+
+def log(msg, level=xbmc.LOGDEBUG):
+    """Write to log file"""
+
+    for line in msg.splitlines():
+        xbmc.log(addon.getAddonInfo('id') + ': ' + line, level)
 
 
 class Directory(object):
@@ -75,24 +69,19 @@ class Directory(object):
         self.is_folder = is_folder
         self.streamable = streamable
 
-    def __nonzero__(self):
-        """Is everything ok?"""
-
-        # Never show hidden directories
-        if self.hidden:
-            return False
-        elif not self.key:
-            log('category has no "key" metadata, skipping', LOGWARNING)
-            return False
-        else:
-            return True
-
     def parse_common(self, data):
         """Constructor from common metadata"""
         self.description = data.get('description')
-        self.hidden = 'WebExclude' in data.get('tags', [])
 
-        # A note on image abbreviations
+        # Note about tags
+        # RokuExclude, FireTVExclude, AppleTVExclude are set-top boxes like Kodi, we should use one of these
+        # WebExclude = deprecated? may be tv.jw.org
+        # RWSLExclude = Sign Language?
+        # JWORGExclude vs WWWExclude, what's the difference?
+        # Library[Tag] has something to do with the new changes to jw.org
+        self.hidden = 'AppleTVExclude' in data.get('tags', [])
+
+        # Note about image abbreviations
         # Last letter: s is smaller, r/h is bigger
         # pss/psr 3:4
         # sqs/sqr 1:1
@@ -119,7 +108,8 @@ class Directory(object):
         if 'StreamThisChannelEnabled' in tags or 'AllowShuffleInCategoryHeader' in tags:
             self.streamable = True
 
-        self.url = request_to_self({Q_MODE: M_BROWSE, Q_STREAMKEY: self.key})
+        if self.key:
+            self.url = request_to_self({Q.MODE: M.BROWSE, Q.STREAMKEY: self.key})
 
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
@@ -133,22 +123,15 @@ class Directory(object):
             li = xbmcgui.ListItem(self.title)
         art_dict = {'icon': self.icon, 'poster': self.icon, 'fanart': self.fanart}
         # Check if there's any art, setArt can be kinda slow
-        if max(v for v in art_dict.values()):
+        if any(art_dict.values()):
             li.setArt(art_dict)
         li.setInfo('video', {'plot': self.description})
 
         if self.streamable:
-            query = {Q_MODE: M_STREAM, Q_STREAMKEY: self.key}
+            query = {Q.MODE: M.STREAM, Q.STREAMKEY: self.key}
             action = 'RunPlugin(' + request_to_self(query) + ')'
-            li.addContextMenuItems([(getstr(30007), action)])
+            li.addContextMenuItems([(S.SHUFFLE_CAT, action)])
 
-        return li
-
-    def listitem_with_path(self):
-        """Return ListItem with path set, because apparently setPath() is slow"""
-
-        li = self.listitem()
-        li.setPath(self.url)
         return li
 
     def add_item_in_kodi(self):
@@ -159,30 +142,18 @@ class Directory(object):
 
 
 class Media(Directory):
-    def __init__(self, offset=None, duration=None, media_type='video', languages=None, publish_date=None,
-                 size=None, is_folder=False, **kwargs):
+    def __init__(self, duration=None, media_type='video', publish_date=None,
+                 size=None, is_folder=False, subtitles=None, **kwargs):
         """An object containing metadata for a video or audio recording"""
 
         super(Media, self).__init__(**kwargs)
-        self.offset = offset
         self.media_type = media_type
         self.size = size
-        self.languages = languages
-        if self.languages is None:
-            self.languages = []
         self.__publish_date = publish_date
         self.__duration = duration
         self.is_folder = is_folder
-
-    def __nonzero__(self):
-        """Is everything ok?"""
-
-        if self.hidden and not self.key:
-            log('hidden media has no "key" metadata, skipping', LOGWARNING)
-        elif not self.hidden and not self.url:
-            log('media has no playable files, skipping', LOGWARNING)
-        else:
-            return True
+        self.subtitles = subtitles
+        self.resolved_url = None
 
     def parse_media(self, data, censor_hidden=True):
         """Constructor taking jw media metadata
@@ -192,20 +163,21 @@ class Media(Directory):
         """
         self.parse_common(data)
         self.key = data.get('languageAgnosticNaturalKey')
+        if self.key:
+            self.url = request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: self.key})
 
         if self.hidden and censor_hidden:
             # Reset to these values
-            self.__init__(title=getstr(30013),
-                          url=request_to_self({Q_MODE: M_HIDDEN, Q_MEDIAKEY: self.key}),
+            self.__init__(title=S.HIDDEN,
+                          url=request_to_self({Q.MODE: M.HIDDEN, Q.MEDIAKEY: self.key}),
                           is_folder=True)
         else:
-            self.url, self.size = self.get_preferred_media_file(data.get('files', []))
+            self.resolved_url, self.size, self.subtitles = self.get_preferred_media_file(data.get('files', []))
             self.title = data.get('title')
             if data.get('type') == 'audio':
                 self.media_type = 'music'
             self.duration = data.get('duration')
             self.publish_date = data.get('firstPublished')
-            self.languages = data.get('availableLanguages', [])
 
     def parse_hits(self, data):
         """Create an instance of Media out of search results
@@ -215,11 +187,11 @@ class Media(Directory):
         self.title = data.get('displayTitle')
         if 'type:audio' in data.get('tags', []):
             self.media_type = 'music'
-            self.title += ' ' + getstr(30008)
+            self.title += ' ' + S.AUDIO_ONLY
         self.key = data.get('languageAgnosticNaturalKey')
         self.publish_date = data.get('firstPublishedDate')
         if self.key:
-            self.url = request_to_self({Q_MODE: M_PLAY, Q_MEDIAKEY: self.key})
+            self.url = request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: self.key})
 
         for m in data.get('metadata', []):
             if m.get('key') == 'duration':
@@ -265,12 +237,12 @@ class Media(Directory):
                 self.__duration = int(t[0]) * 60 + int(t[1])
             elif len(t) == 1:
                 self.__duration = int(t[0])
-        except (ValueError, TypeError):
+        except (AttributeError, ValueError, TypeError):
             pass
 
     @staticmethod
     def get_preferred_media_file(data):
-        """Take an jw JSON array of files and metadata and return the most suitable like (url, size)"""
+        """Take an jw JSON array of files and metadata and return the most suitable like (url, size, subtitles)"""
 
         # Rank media files depending on how they match certain criteria
         # Video resolution will be converted to a rank between 2 and 10
@@ -292,7 +264,7 @@ class Media(Directory):
             if 0 < res <= video_res:
                 rank += resolution_not_too_big
             # 'subtitled' only applies to hardcoded video subtitles
-            if f.get('subtitled') is subtitles:
+            if f.get('subtitled') == subtitle_setting:
                 rank += subtitles_matches_pref
             files.append((rank, f))
         files.sort()
@@ -300,9 +272,9 @@ class Media(Directory):
         if len(files) > 0:
             # [-1] The file with the highest rank, [1] the filename, not the rank
             f = files[-1][1]
-            return f['progressiveDownloadURL'], f['filesize']
+            return f['progressiveDownloadURL'], f['filesize'], getitem(f, 'subtitles', 'url', default=None)
         else:
-            return None, None
+            return None, None, None
 
     def listitem(self):
         """Create a Kodi listitem from the metadata"""
@@ -324,8 +296,8 @@ class Media(Directory):
             info_dict['plot'] = self.description
 
         if self.publish_date:
-            info_dict['date'] = time.strftime('%d.%m.%Y', self.publish_date)
-            info_dict['year'] = time.strftime('%Y', self.publish_date)
+            info_dict['date'] = strftime('%d.%m.%Y', self.publish_date)
+            info_dict['year'] = strftime('%Y', self.publish_date)
 
         try:
             # Kodi v18
@@ -336,21 +308,31 @@ class Media(Directory):
         li.setArt(art_dict)
         li.setInfo(self.media_type, info_dict)
 
-        if self.offset:
-            li.setProperty('StartOffset', self.offset)
-        if self.url:
-            # For some reason needed by xbmcplugin.setResolvedUrl
-            li.setProperty("isPlayable", "true")
+        # For some reason needed for listitems that will open xbmcplugin.setResolvedUrl
+        li.setProperty('isPlayable', 'true')
+
+        if self.subtitles:
+            li.setSubtitles([self.subtitles])
+
+        context_menu = []
 
         # Play in other language context menu
         if self.key:
-            query = {Q_MODE: M_LANGUAGES, Q_MEDIAKEY: self.key}
-            if self.languages:
-                query[Q_LANGFILTER] = ' '.join(self.languages)
+            query = {Q.MODE: M.LANGUAGES, Q.MEDIAKEY: self.key}
             # Note: Use RunPlugin instead of RunAddon, because an add-on assumes a folder view
             action = 'RunPlugin(' + request_to_self(query) + ')'
-            li.addContextMenuItems([(getstr(30006), action)])
+            context_menu.append((S.PLAY_LANG, action))
 
+        if context_menu:
+            li.addContextMenuItems(context_menu)
+
+        return li
+
+    def listitem_with_resolved_url(self):
+        """Return ListItem with path set, because apparently setPath() is slow"""
+
+        li = self.listitem()
+        li.setPath(self.resolved_url)
         return li
 
 
@@ -387,6 +369,7 @@ def getitem(obj, *keys, **kwargs):
             # Could not get value, try next
             continue
 
+    # Py2: get() unicode is ok
     if kwargs.get('fail', False):
         # No keys existed for this level, return to parent
         raise KeyError
@@ -395,51 +378,40 @@ def getitem(obj, *keys, **kwargs):
         return kwargs.get('default')
 
 
-def get_json(url, on_fail='exit'):
+def get_json(url, ignore_errors=False, catch_401=True):
     """Fetch JSON data from an URL and return it as a Python object
 
     :param url: URL to open or a Request object
-    :param on_fail: string, what to do on a URLError: exit, log, error
+    :param ignore_errors: IO exceptions will only be logged, don't exit
+    :param catch_401: If False HTTP 401 will be passed on instead of caught
 
-    exit - issue a notification to Kodi and exit the plugin instance (default)
-    log - print to the log and return None
-    error - raise an error
+    IF an IO exception occurs a message will be displayed and the script exits.
     """
+    if isinstance(url, Request):
+        log('opening {}'.format(url.get_full_url()), xbmc.LOGINFO)
+    else:
+        log('opening {}'.format(url), xbmc.LOGINFO)
+
     try:
-        if type(url) == str:
-            log('opening ' + url, LOGINFO)
-        elif isinstance(url, urllib2.Request):
-            log('opening ' + url.get_full_url(), LOGINFO)
-        data = urllib2.urlopen(url).read().decode('utf-8')
-    except urllib2.URLError as e:
-        if on_fail == 'log':
-            log('{}: {}'.format(url, e.reason), LOGWARNING)
+        data = urlopen(url).read().decode('utf-8')  # urlopen returns bytes
+    # Catches URLError, HTTPError, SSLError ...
+    except IOError as e:
+        if ignore_errors:
+            log(traceback.format_exc(), level=xbmc.LOGWARNING)
             return None
-        elif on_fail == 'exit':
-            log('{}: {}'.format(url, e.reason), LOGERROR)
+        elif not catch_401 and isinstance(e, HTTPError) and e.code == 401:
+            raise
+        else:
+            log(traceback.format_exc(), level=xbmc.LOGERROR)
             xbmcgui.Dialog().notification(
                 addon.getAddonInfo('name'),
-                getstr(30009),
+                S.CONN_ERR,
                 icon=xbmcgui.NOTIFICATION_ERROR)
             # Don't raise an error, it will just generate another cryptic notification in Kodi
             exit()
-        else:
-            raise e
-    else:
-        return json.loads(data)
+            raise  # to make PyCharm happy
 
-
-def get_jwt_token(update=False):
-    """Get temporary authentication token from memory, or jw.org"""
-
-    token = addon.getSetting('jwt_token')
-    if not token or update is True:
-        log('requesting new authentication token from tv.jw.org', LOGINFO)
-        url = 'https://tv.jw.org/tokens/web.jwt'
-        token = urllib2.urlopen(url).read().decode('utf-8')
-        if token != '':
-            addon.setSetting('jwt_token', token)
-    return token
+    return json.loads(data)
 
 
 def top_level_page():
@@ -447,28 +419,46 @@ def top_level_page():
 
     default_fanart = os.path.join(addon.getAddonInfo('path'), addon.getAddonInfo('fanart'))
 
-    if addon.getSetting('startupmsg') == 'true':
+    if addon.getSetting(SettingID.START_WARNING) == 'true':
         dialog = xbmcgui.Dialog()
-        if dialog.yesno(getstr(30016), getstr(30017),
-                        nolabel=getstr(30018), yeslabel=getstr(30019)):
-            dialog.textviewer(getstr(30016), getstr(30020))
+        try:
+            dialog.textviewer(S.THEO_WARN, S.DISCLAIMER)  # Kodi v16
+        except AttributeError:
+            dialog.ok(S.THEO_WARN, S.DISCLAIMER)
+        addon.setSetting(SettingID.START_WARNING, 'false')
 
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '?detailed=True')
+    # Auto language
+    isolang = xbmc.getLanguage(xbmc.ISO_639_1)
+    if not addon.getSetting(SettingID.LANG_HIST):
+        # Write English to language history, so this code only runs once
+        addon.setSetting(SettingID.LANG_HIST, 'E')
+        # If Kodi is in foreign language
+        if isolang != 'en':
+            data = get_json('http://data.jw-api.org/mediator/v1/languages/E/web')
+            for l in data['languages']:
+                if l['locale'] == isolang:
+                    # Save setting, and update for this this instance
+                    set_language(l['code'], l['name'] + ' / ' + l['vernacular'])
+                    global global_lang
+                    global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
+                    break
+
+    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '?detailed=True')
 
     for c in data['categories']:
         d = Directory(fanart=default_fanart)
         d.parse_category(c)
-        if d:
+        if d.url and not d.hidden:
             d.add_item_in_kodi()
 
     # Get "search" translation from internet - overkill but so cool
     # Try cache first, to speed up loading
-    search_label = addon.getSetting('search_tr')
+    search_label = addon.getSetting(SettingID.SEARCH_TRANSL)
     if not search_label:
-        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + language, on_fail='log')
-        search_label = getitem(data, 'translations', language, 'hdgSearch', default='Search')
-        addon.setSetting('search_tr', search_label)
-    d = Directory(url=request_to_self({Q_MODE: M_SEARCH}), title=search_label, fanart=default_fanart,
+        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + global_lang, ignore_errors=True)
+        search_label = getitem(data, 'translations', global_lang, 'hdgSearch', default='Search')
+        addon.setSetting(SettingID.SEARCH_TRANSL, search_label)
+    d = Directory(url=request_to_self({Q.MODE: M.SEARCH}), title=search_label, fanart=default_fanart,
                   icon='DefaultMusicSearch.png')
     d.add_item_in_kodi()
 
@@ -483,7 +473,7 @@ def sub_level_page(sub_level):
     #  all media is included in the response, which slows down the parsing a lot.
     #  All this extra data has no function in this script. If there only was a way
     #  to request the subcategories, but without their media...
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '/' + sub_level + '?&detailed=1')
+    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '/' + sub_level + '?&detailed=1')
     data = data['category']
 
     # Enable more viewtypes
@@ -494,13 +484,13 @@ def sub_level_page(sub_level):
         for sc in data['subcategories']:
             d = Directory()
             d.parse_category(sc)
-            if d:
+            if d.url and not d.hidden:
                 d.add_item_in_kodi()
     if 'media' in data:
         for md in data['media']:
             m = Media()
             m.parse_media(md)
-            if m:
+            if m.url:
                 m.add_item_in_kodi()
 
     xbmcplugin.endOfDirectory(addon_handle)
@@ -509,11 +499,13 @@ def sub_level_page(sub_level):
 def shuffle_category(key):
     """Generate a shuffled playlist and start playing"""
 
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + language + '/' + key + '?&detailed=1')
+    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '/' + key + '?&detailed=1')
     data = data['category']
     all_media = data.get('media', [])
     for sc in data.get('subcategories', []):  # type: dict
-        all_media += sc.get('media', [])
+        # Don't include things like Featured, because that would become duplicate
+        if 'AllowShuffleInCategoryHeader' in sc.get('tags', []):
+            all_media += sc.get('media', [])
 
     # Shuffle in place, we don't want to mess with Kodi's settings
     random.shuffle(all_media)
@@ -524,29 +516,33 @@ def shuffle_category(key):
     for md in all_media:
         media = Media()
         media.parse_media(md, censor_hidden=False)
-        if media and not media.hidden:
-            pl.add(media.url, media.listitem_with_path())
+        if media.url and not media.hidden:
+            pl.add(media.resolved_url, media.listitem())
 
     xbmc.Player().play(pl)
 
 
-def language_dialog(media_key=None, valid_langs=None):
+def language_dialog(media_key=None):
     """Display a list of languages and set the global language setting
 
     :param media_key: play this media file instead of changing global setting
-    :param valid_langs: space separated list of language codes, for filtering
     """
     # Note: the list from jw.org is already sorted by ['name']
-    data = get_json('http://data.jw-api.org/mediator/v1/languages/' + language + '/web')
+    data = get_json('http://data.jw-api.org/mediator/v1/languages/' + global_lang + '/web')
     # Convert language data to a list of tuples with (code, name)
     languages = [(l.get('code'), l.get('name', '') + ' / ' + l.get('vernacular', ''))
                  for l in data['languages']]
     # Get the languages matching the ones from history and put them first
-    history = addon.getSetting('lang_history').split()
+    history = addon.getSetting(SettingID.LANG_HIST).split()
     languages = [l for h in history for l in languages if l[0] == h] + languages
 
-    if valid_langs:
-        languages = [l for l in languages if l[0] in valid_langs.split()]
+    if media_key:
+        # Lookup media, and only show available languages
+        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+        data = get_json(url)
+        available_langs = data['media'][0].get('availableLanguages')
+        if available_langs:
+            languages = [l for l in languages if l[0] in available_langs]
 
     dialog_strings = []
     dialog_actions = []
@@ -554,35 +550,39 @@ def language_dialog(media_key=None, valid_langs=None):
         dialog_strings.append(name)
         if media_key:
             request = request_to_self({
-                Q_MODE: M_PLAY,
-                Q_MEDIAKEY: media_key,
-                Q_LANGCODE: code})
+                Q.MODE: M.PLAY,
+                Q.MEDIAKEY: media_key,
+                Q.LANGCODE: code})
             dialog_actions.append('PlayMedia(' + request + ')')
         else:
-            request = request_to_self({Q_MODE: M_SET_LANG, Q_LANGCODE: code})
+            request = request_to_self({
+                Q.MODE: M.SET_LANG,
+                Q.LANGNAME: name,
+                Q.LANGCODE: code})
             dialog_actions.append('RunPlugin(' + request + ')')
 
-    selection = xbmcgui.Dialog().select(None, dialog_strings)
+    selection = xbmcgui.Dialog().select('', dialog_strings)
     if selection >= 0:
         xbmc.executebuiltin(dialog_actions[selection])
 
 
-def set_language(lang):
+def set_language(lang, name):
     """Save a language to setting and history"""
 
-    addon.setSetting('language', lang)
+    addon.setSetting(SettingID.LANGUAGE, lang)
+    addon.setSetting(SettingID.LANG_NAME, name)
     save_language_history(lang)
     # Forget about the translation of "Search"
-    addon.setSetting('search_tr', '')
+    addon.setSetting(SettingID.SEARCH_TRANSL, '')
 
 
 def save_language_history(lang):
     """Save a language code first in history"""
 
-    history = addon.getSetting('lang_history').split()
+    history = addon.getSetting(SettingID.LANG_HIST).split()
     history = [lang] + [h for h in history if h != lang]
     history = history[0:5]
-    addon.setSetting('lang_history', ' '.join(history))
+    addon.setSetting(SettingID.LANG_HIST, ' '.join(history))
 
 
 def search_page():
@@ -596,21 +596,33 @@ def search_page():
 
         search_string = kb.getText()
         url = 'https://data.jw-api.org/search/query?'
-        query = urllib.urlencode({'q': search_string, 'lang': language, 'limit': 24})
-        headers = {'Authorization': 'Bearer ' + get_jwt_token()}
+        query = urlencode({'q': search_string, 'lang': global_lang, 'limit': 24})
+
         try:
-            data = get_json(urllib2.Request(url + query, headers=headers), on_fail='error')
-        except urllib2.HTTPError as e:
-            if e.code == 401:
-                headers = {'Authorization': 'Bearer ' + get_jwt_token(True)}
-                data = get_json(urllib2.Request(url + query, headers=headers))
-            else:
-                raise e
+            token = addon.getSetting(SettingID.TOKEN)
+            if not token:
+                raise RuntimeError
+
+            headers = {'Authorization': 'Bearer ' + token}
+            data = get_json(Request(url + query, headers=headers), catch_401=False)
+
+        except (HTTPError, RuntimeError):
+            # Get and save new token
+            log('requesting new authentication token from jw.org', xbmc.LOGINFO)
+            token_url = 'https://tv.jw.org/tokens/web.jwt'
+            token = urlopen(token_url).read().decode('utf-8')
+            if not token:
+                raise RuntimeError('failed to get search authentication token')
+
+            addon.setSetting(SettingID.TOKEN, token)
+
+            headers = {'Authorization': 'Bearer ' + token}
+            data = get_json(Request(url + query, headers=headers))
 
         for hd in data['hits']:
             media = Media()
             media.parse_hits(hd)
-            if media:
+            if media.url:
                 media.add_item_in_kodi()
 
         xbmcplugin.endOfDirectory(addon_handle)
@@ -620,12 +632,12 @@ def hidden_media_dialog(media_key):
     """Ask the user for permission, then create a folder with a single media entry"""
 
     dialog = xbmcgui.Dialog()
-    if dialog.yesno(getstr(30013), getstr(30014)):
-        url = 'https://data.jw-api.org/mediator/v1/media-items/' + language + '/' + media_key
+    if dialog.yesno(S.HIDDEN, S.CONV_QUESTION):
+        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
         data = get_json(url)
         media = Media()
         media.parse_media(data['media'][0], censor_hidden=False)
-        if media:
+        if media.url:
             media.add_item_in_kodi()
         else:
             raise RuntimeError
@@ -633,22 +645,40 @@ def hidden_media_dialog(media_key):
 
 
 def resolve_media(media_key, lang=None):
-    """Resolve to a playable URL for a media key name, as found in tv.jw.org URLs
+    """Resolve to a playable URL for a media key name
 
-    :param media_key: string, media to play
+    :param media_key: string, id of media to play
     :param lang: string, language code
 
-    When language is specified, play video in that language, and save language in history
+    When language is specified, play video in that language, with subtitles in "global language"
     """
-    if lang:
-        save_language_history(lang)
-
-    url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or language) + '/' + media_key
+    url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or global_lang) + '/' + media_key
     data = get_json(url)
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
-    if media:
-        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_path())
+
+    if lang:
+        save_language_history(lang)
+
+        # Add subtitles from the global language too
+        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+        data = get_json(url, ignore_errors=True)
+        global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
+        if global_lang_subs:
+            media.subtitles = global_lang_subs
+
+    if media.resolved_url:
+        xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_resolved_url())
+        # Ugly way to turn on/off subtitles (without changing the global Kodi setting), try it for 10 sec
+        # TODO change this if made possible in the future
+        player = xbmc.Player()
+        for i in range(1, 10):
+            if player.getAvailableSubtitleStreams():
+                # Subtitles are always on if language is explicitly specified
+                player.showSubtitles(bool(lang) or subtitle_setting)
+                break
+            time.sleep(1)
+
     else:
         raise RuntimeError
 
@@ -657,54 +687,53 @@ def request_to_self(query):
     """Return a string with an URL request to the add-on itself"""
 
     # argv[0] is path to the plugin
-    return sys.argv[0] + '?' + urllib.urlencode(query)
+    return sys.argv[0] + '?' + urlencode(query)
 
 
-def main():
+if __name__ == '__main__':
+    # To send stuff to the screen
+    addon_handle = int(sys.argv[1])
+    # To get settings and info
+    addon = xbmcaddon.Addon()
+    # For logging purpose
+    addon_id = addon.getAddonInfo('id')
+    # To to get translated strings
+    S = LocalizedStringID(addon.getLocalizedString)
+
+    video_res = [1080, 720, 480, 360, 240][int(addon.getSetting(SettingID.RESOLUTION))]
+    subtitle_setting = addon.getSetting(SettingID.SUBTITLES) == 'true'
+    global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
+
+    # The awkward way Kodi passes arguments to the add-on...
+    # argv[2] is a URL query string, probably passed by request_to_self()
+    # example: ?mode=play&media=ThisVideo
+    args = parse_qs(sys.argv[2][1:])
+    # parse_qs puts the values in a list, so we grab the first value for each key
+    args = {k: v[0] for k, v in args.items()}
+
     # Tested in Kodi 18: This will disable all viewtypes but list and icons won't be displayed within the list
     xbmcplugin.setContent(addon_handle, 'files')
 
-    mode = args.get(Q_MODE)
+    mode = args.get(Q.MODE)
 
     if mode is None:
         top_level_page()
-    elif mode == M_LANGUAGES:
-        language_dialog(args.get(Q_MEDIAKEY), args.get(Q_LANGFILTER))
-    elif mode == M_SET_LANG:
-        set_language(args[Q_LANGCODE])
-    elif mode == M_HIDDEN:
-        hidden_media_dialog(args[Q_MEDIAKEY])
-    elif mode == M_SEARCH:
+    elif mode == M.LANGUAGES:
+        language_dialog(args.get(Q.MEDIAKEY))
+    elif mode == M.SET_LANG:
+        set_language(args[Q.LANGCODE], args[Q.LANGNAME])
+    elif mode == M.HIDDEN:
+        hidden_media_dialog(args[Q.MEDIAKEY])
+    elif mode == M.SEARCH:
         search_page()
-    elif mode == M_PLAY:
-        resolve_media(args[Q_MEDIAKEY], args.get(Q_LANGCODE))
-    elif mode == M_BROWSE:
-        sub_level_page(args[Q_CATKEY])
-    elif mode == M_STREAM:
-        shuffle_category(args[Q_STREAMKEY])
+    elif mode == M.PLAY:
+        resolve_media(args[Q.MEDIAKEY], args.get(Q.LANGCODE))
+    elif mode == M.BROWSE:
+        sub_level_page(args[Q.CATKEY])
+    elif mode == M.STREAM:
+        shuffle_category(args[Q.STREAMKEY])
     # Backwards compatibility
     elif mode.startswith('Streaming') and mode != 'Streaming':
         shuffle_category(mode)
     else:
         sub_level_page(mode)
-
-
-if __name__ == '__main__':
-    # The awkward way Kodi passes arguments to the add-on...
-    # argv[2] is a URL query string, probably passed by request_to_self()
-    # example: ?mode=play&media=ThisVideo
-    args = urlparse.parse_qs(sys.argv[2][1:])
-    # parse_qs puts the values in a list, so we grab the first value for each key
-    args = {k: v[0] for k, v in args.items()}
-
-    if CPROFILE:
-        import cProfile
-
-        output = '{}/{}-{}-{}.cprof'.format(CPROFILE_OUTPUT_DIR,
-                                            time.strftime('%y%m%d%H%M%S'),
-                                            args.get(Q_MODE),
-                                            args.get(Q_CATKEY) or args.get(Q_MEDIAKEY))
-        log('saving cProfile output to ' + output)
-        cProfile.run('main()', output)
-    else:
-        main()

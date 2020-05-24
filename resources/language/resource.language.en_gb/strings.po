@@ -1,0 +1,101 @@
+# Not transifexically correct, but it works
+# The comments are translated to variable names by translations.py so don't mess with them :)
+# And for some reason there must be an empty string at the start
+msgid ""
+msgstr ""
+
+# res
+msgctxt "#30000"
+msgid "Video Resolution"
+msgstr ""
+
+# p240
+msgctxt "#30001"
+msgid "240p"
+msgstr ""
+
+# p360
+msgctxt "#30002"
+msgid "360p"
+msgstr ""
+
+# p480
+msgctxt "#30003"
+msgid "480p"
+msgstr ""
+
+# p720
+msgctxt "#30004"
+msgid "720p"
+msgstr ""
+
+# p1080
+msgctxt "#30005"
+msgid "1080p"
+msgstr ""
+
+# lang
+msgctxt "#30010"
+msgid "Language"
+msgstr ""
+
+# set lang
+msgctxt "#30011"
+msgid "Set Language ..."
+msgstr ""
+
+# disp sub
+msgctxt "#30012"
+msgid "Display subtitles by default"
+msgstr ""
+
+# hidden
+msgctxt "#30013"
+msgid "-- Hidden item --"
+
+# conv question
+msgctxt "#30014"
+msgid "Have you already attended this year's convention?"
+msgstr ""
+
+# start warn
+msgctxt "#30015"
+msgid "Startup warning"
+msgstr ""
+
+# theo warn
+msgctxt "#30016"
+msgid "Theocratic warning"
+msgstr ""
+
+# disclaimer
+msgctxt "#30020"
+msgid "This add-on is not supported by, or affiliated with the Watchtower society in any way.\n"
+"Please use the official JW Broadcasting app for your device, if available.\n"
+"Or consider buying a device that supports the JW Broadcasting or JW Library app.\n\n"
+"Since this add-on is homemade, you must choose if you are willing to trust it.\n"
+"- The add-on may not work as intended.\n"
+"- You may not get all the benefits of jw.org.\n"
+"- The spiritual food could in absolute worst case be tampered with.\n\n"
+"Please read the following Watchtower article before you make up your mind:\n"
+"[B]w18 April page 30[/B]\n\n"
+"This message will only be shown once."
+
+# play lang
+msgctxt "#30021"
+msgid "Play in another language"
+msgstr ""
+
+# shuffle cat
+msgctxt "#30023"
+msgid "Shuffle this category"
+msgstr ""
+
+# audio only
+msgctxt "#30024"
+msgid "[audio only]"
+
+# conn err
+msgctxt "#30025"
+msgid "Connection error"
+msgstr ""
