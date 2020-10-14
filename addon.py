@@ -657,7 +657,7 @@ def resolve_media(media_key, lang=None):
         # This will make watched status and resume position language agnostic
         save_language_history(lang)
         addon.setSetting(SettingID.LANG_NEXT, lang)
-        xbmc.Player().play(request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: media_key}))
+        xbmc.executebuiltin('PlayMedia({}, resume)'.format(request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: media_key})))
         return
 
     one_time_lang = addon.getSetting(SettingID.LANG_NEXT)
