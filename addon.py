@@ -685,7 +685,7 @@ def resolve_media(media_key, lang=None):
         for i in range(1, 10):
             if player.getAvailableSubtitleStreams():
                 # Subtitles are always on if language is explicitly specified
-                player.showSubtitles(bool(lang) or subtitle_setting)
+                player.showSubtitles(bool(one_time_lang) or subtitle_setting)
                 break
             time.sleep(1)
 
