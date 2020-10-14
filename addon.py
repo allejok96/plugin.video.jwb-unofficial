@@ -553,7 +553,7 @@ def language_dialog(media_key=None):
                 Q.MODE: M.PLAY,
                 Q.MEDIAKEY: media_key,
                 Q.LANGCODE: code})
-            dialog_actions.append('PlayMedia(' + request + ')')
+            dialog_actions.append('RunPlugin(' + request + ')')
         else:
             request = request_to_self({
                 Q.MODE: M.SET_LANG,
@@ -652,13 +652,23 @@ def resolve_media(media_key, lang=None):
 
     When language is specified, play video in that language, with subtitles in "global language"
     """
-    url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or global_lang) + '/' + media_key
+    if lang:
+        # If we were called with a language, remove it from the URI and make a new request
+        # This will make watched status and resume position language agnostic
+        save_language_history(lang)
+        addon.setSetting(SettingID.LANG_NEXT, lang)
+        xbmc.Player().play(request_to_self({Q.MODE: M.PLAY, Q.MEDIAKEY: media_key}))
+        return
+
+    one_time_lang = addon.getSetting(SettingID.LANG_NEXT)
+
+    url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or one_time_lang or global_lang) + '/' + media_key
     data = get_json(url)
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
 
-    if lang:
-        save_language_history(lang)
+    if one_time_lang:
+        addon.setSetting(SettingID.LANG_NEXT, None)
 
         # Add subtitles from the global language too
         url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key

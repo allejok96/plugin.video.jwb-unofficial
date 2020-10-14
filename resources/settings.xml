@@ -3,6 +3,7 @@
     <setting id="language" visible="false" type="text" default="E"/>
     <setting id="lang_name" type="text" enable="false" default="English" label="30010"/>
     <setting id="lang_history" type="text" default="" visible="false"/>
+    <setting id="lang_next" type="text" default="" visible="false"/>
     <setting label="30011" type="action" option="close"
              action="RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=languages)"/>
     <!-- The order is backwards, but changing it would perhaps break setting with update -->
