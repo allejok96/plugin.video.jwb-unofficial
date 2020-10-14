@@ -53,6 +53,7 @@ class SettingID(object):
     LANGUAGE = 'language'
     LANG_HIST = 'lang_history'
     LANG_NAME = 'lang_name'
+    LANG_NEXT = 'lang_next'
     TOKEN = 'jwt_token'
     START_WARNING = 'startupmsg'
     SEARCH_TRANSL = 'search_tr'
