@@ -5,14 +5,14 @@ from __future__ import absolute_import, division, unicode_literals
 
 
 class AttributeProxy(object):
-    """Run a function when getting attributes
+    """A class which runs a function when accessing its attributes
 
     For example:
-        p = AttributeProxy(function)
-        p.x
+        proxy = AttributeProxy(function)
+        proxy.some_attribute
 
-    Will be the same as calling:
-        function(AttributeProxy.x)
+    Is the same as:
+        function(AttributeProxy.some_attribute)
     """
 
     def __init__(self, function):
@@ -47,7 +47,7 @@ class Mode(object):
 
 
 class SettingID(object):
-    """Setting IDs in Kodi"""
+    """IDs from settins.xml"""
     RESOLUTION = 'video_res'
     SUBTITLES = 'subtitles'
     LANGUAGE = 'language'
@@ -60,17 +60,7 @@ class SettingID(object):
 
 
 class LocalizedStringID(AttributeProxy):
-    """IDs for strings from PO file"""
-    # Auto generated, by running this module directly
-    RES = 30000
-    P240 = 30001
-    P360 = 30002
-    P480 = 30003
-    P720 = 30004
-    P1080 = 30005
-    LANG = 30010
-    SET_LANG = 30011
-    DISP_SUB = 30012
+    """IDs from strings.po"""
     HIDDEN = 30013
     CONV_QUESTION = 30014
     START_WARN = 30015
@@ -80,19 +70,3 @@ class LocalizedStringID(AttributeProxy):
     SHUFFLE_CAT = 30023
     AUDIO_ONLY = 30024
     CONN_ERR = 30025
-
-
-def _generate_string_ids():
-    # Py2: 'rb' gives us bytes in both Py2 and Py3 so we can decode it to unicode
-    strings = open('../language/resource.language.en_gb/strings.po', 'rb').read().decode('utf-8')
-    comment = None
-    for line in strings.split('\n'):
-        if line.startswith('# '):
-            comment = line[2:].replace(' ', '_').upper()
-        elif line.startswith('msgctxt') and comment:
-            print('{} = {}'.format(comment, line[10:15]))
-            comment = None
-
-
-if __name__ == '__main__':
-    _generate_string_ids()
