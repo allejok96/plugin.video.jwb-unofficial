@@ -668,14 +668,16 @@ def resolve_media(media_key, lang=None):
     media.parse_media(data['media'][0], censor_hidden=False)
 
     if one_time_lang:
-        addon.setSetting(SettingID.LANG_NEXT, None)
+        if addon.getSetting(SettingID.REMEMBER_LANG) == 'false':
+            addon.setSetting(SettingID.LANG_NEXT, None)
 
-        # Add subtitles from the global language too
-        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
-        data = get_json(url, ignore_errors=True)
-        global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
-        if global_lang_subs:
-            media.subtitles = global_lang_subs
+        if one_time_lang != global_lang:
+            # Add subtitles from the global language too
+            url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+            data = get_json(url, ignore_errors=True)
+            global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
+            if global_lang_subs:
+                media.subtitles = global_lang_subs
 
     if media.resolved_url:
         xbmcplugin.setResolvedUrl(addon_handle, succeeded=True, listitem=media.listitem_with_resolved_url())
@@ -684,8 +686,8 @@ def resolve_media(media_key, lang=None):
         player = xbmc.Player()
         for i in range(1, 10):
             if player.getAvailableSubtitleStreams():
-                # Subtitles are always on if language is explicitly specified
-                player.showSubtitles(bool(one_time_lang) or subtitle_setting)
+                # Subtitles are always on if a FOREIGN language is explicitly specified
+                player.showSubtitles(one_time_lang and one_time_lang != global_lang or subtitle_setting)
                 break
             time.sleep(1)
 

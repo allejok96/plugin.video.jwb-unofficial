@@ -80,3 +80,7 @@ msgid "[audio only]"
 msgctxt "#30025"
 msgid "Connection error"
 msgstr ""
+
+msgctxt "#30026"
+msgid "Always use last selected language"
+msgstr ""

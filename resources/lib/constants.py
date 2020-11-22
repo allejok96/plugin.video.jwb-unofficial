@@ -57,6 +57,7 @@ class SettingID(object):
     TOKEN = 'jwt_token'
     START_WARNING = 'startupmsg'
     SEARCH_TRANSL = 'search_tr'
+    REMEMBER_LANG = 'remember_lang'
 
 
 class LocalizedStringID(AttributeProxy):
