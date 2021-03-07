@@ -11,6 +11,7 @@ import traceback
 from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
 
 from resources.lib.constants import Query as Q, Mode as M, SettingID, LocalizedStringID
+from resources.lib.constants import CATEGORY_URL, LANGUAGE_URL, MEDIA_URL, SEARCH_URL, TOKEN_URL, TRANSLATION_URL
 
 try:
     from urllib.error import HTTPError, URLError
@@ -434,7 +435,7 @@ def top_level_page():
         addon.setSetting(SettingID.LANG_HIST, 'E')
         # If Kodi is in foreign language
         if isolang != 'en':
-            data = get_json('http://data.jw-api.org/mediator/v1/languages/E/web')
+            data = get_json(LANGUAGE_URL + 'E/web')
             for l in data['languages']:
                 if l['locale'] == isolang:
                     # Save setting, and update for this this instance
@@ -443,7 +444,7 @@ def top_level_page():
                     global_lang = addon.getSetting(SettingID.LANGUAGE) or 'E'
                     break
 
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '?detailed=True')
+    data = get_json(CATEGORY_URL + global_lang + '?detailed=True')
 
     for c in data['categories']:
         d = Directory(fanart=default_fanart)
@@ -455,7 +456,7 @@ def top_level_page():
     # Try cache first, to speed up loading
     search_label = addon.getSetting(SettingID.SEARCH_TRANSL)
     if not search_label:
-        data = get_json('https://data.jw-api.org/mediator/v1/translations/' + global_lang, ignore_errors=True)
+        data = get_json(TRANSLATION_URL + global_lang, ignore_errors=True)
         search_label = getitem(data, 'translations', global_lang, 'hdgSearch', default='Search')
         addon.setSetting(SettingID.SEARCH_TRANSL, search_label)
     d = Directory(url=request_to_self({Q.MODE: M.SEARCH}), title=search_label, fanart=default_fanart,
@@ -473,7 +474,7 @@ def sub_level_page(sub_level):
     #  all media is included in the response, which slows down the parsing a lot.
     #  All this extra data has no function in this script. If there only was a way
     #  to request the subcategories, but without their media...
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '/' + sub_level + '?&detailed=1')
+    data = get_json(CATEGORY_URL + global_lang + '/' + sub_level + '?&detailed=1')
     data = data['category']
 
     # Enable more viewtypes
@@ -499,7 +500,7 @@ def sub_level_page(sub_level):
 def shuffle_category(key):
     """Generate a shuffled playlist and start playing"""
 
-    data = get_json('https://data.jw-api.org/mediator/v1/categories/' + global_lang + '/' + key + '?&detailed=1')
+    data = get_json(CATEGORY_URL + global_lang + '/' + key + '?&detailed=1')
     data = data['category']
     all_media = data.get('media', [])
     for sc in data.get('subcategories', []):  # type: dict
@@ -528,7 +529,7 @@ def language_dialog(media_key=None):
     :param media_key: play this media file instead of changing global setting
     """
     # Note: the list from jw.org is already sorted by ['name']
-    data = get_json('http://data.jw-api.org/mediator/v1/languages/' + global_lang + '/web')
+    data = get_json(LANGUAGE_URL + global_lang + '/web')
     # Convert language data to a list of tuples with (code, name)
     languages = [(l.get('code'), l.get('name', '') + ' / ' + l.get('vernacular', ''))
                  for l in data['languages']]
@@ -538,7 +539,7 @@ def language_dialog(media_key=None):
 
     if media_key:
         # Lookup media, and only show available languages
-        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
+        url = MEDIA_URL + global_lang + '/' + media_key
         data = get_json(url)
         available_langs = data['media'][0].get('availableLanguages')
         if available_langs:
@@ -595,7 +596,6 @@ def search_page():
         xbmcplugin.setContent(addon_handle, 'videos')
 
         search_string = kb.getText()
-        url = 'https://data.jw-api.org/search/query?'
         query = urlencode({'q': search_string, 'lang': global_lang, 'limit': 24})
 
         try:
@@ -604,20 +604,19 @@ def search_page():
                 raise RuntimeError
 
             headers = {'Authorization': 'Bearer ' + token}
-            data = get_json(Request(url + query, headers=headers), catch_401=False)
+            data = get_json(Request(SEARCH_URL + '?' + query, headers=headers), catch_401=False)
 
         except (HTTPError, RuntimeError):
             # Get and save new token
             log('requesting new authentication token from jw.org', xbmc.LOGINFO)
-            token_url = 'https://tv.jw.org/tokens/web.jwt'
-            token = urlopen(token_url).read().decode('utf-8')
+            token = urlopen(TOKEN_URL).read().decode('utf-8')
             if not token:
                 raise RuntimeError('failed to get search authentication token')
 
             addon.setSetting(SettingID.TOKEN, token)
 
             headers = {'Authorization': 'Bearer ' + token}
-            data = get_json(Request(url + query, headers=headers))
+            data = get_json(Request(SEARCH_URL + '?' + query, headers=headers))
 
         for hd in data['hits']:
             media = Media()
@@ -633,8 +632,7 @@ def hidden_media_dialog(media_key):
 
     dialog = xbmcgui.Dialog()
     if dialog.yesno(S.HIDDEN, S.CONV_QUESTION):
-        url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
-        data = get_json(url)
+        data = get_json(MEDIA_URL + global_lang + '/' + media_key)
         media = Media()
         media.parse_media(data['media'][0], censor_hidden=False)
         if media.url:
@@ -662,8 +660,7 @@ def resolve_media(media_key, lang=None):
 
     one_time_lang = addon.getSetting(SettingID.LANG_NEXT)
 
-    url = 'https://data.jw-api.org/mediator/v1/media-items/' + (lang or one_time_lang or global_lang) + '/' + media_key
-    data = get_json(url)
+    data = get_json(MEDIA_URL + (lang or one_time_lang or global_lang) + '/' + media_key)
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
 
@@ -673,8 +670,7 @@ def resolve_media(media_key, lang=None):
 
         if one_time_lang != global_lang:
             # Add subtitles from the global language too
-            url = 'https://data.jw-api.org/mediator/v1/media-items/' + global_lang + '/' + media_key
-            data = get_json(url, ignore_errors=True)
+            data = get_json(MEDIA_URL + global_lang + '/' + media_key, ignore_errors=True)
             global_lang_subs = getitem(data, 'media', 0, 'files', 0, 'subtitles', 'url', default=None)
             if global_lang_subs:
                 media.subtitles = global_lang_subs

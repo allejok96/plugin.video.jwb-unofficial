@@ -3,6 +3,15 @@ Static variables to simplify for the IDE, and a proxy object for translation IDs
 """
 from __future__ import absolute_import, division, unicode_literals
 
+API_BASE = 'https://data.jw-api.org/mediator/v1'
+TRANSLATION_URL = API_BASE + '/translations/'
+CATEGORY_URL = API_BASE + '/categories/'
+MEDIA_URL = API_BASE + '/media-items/'
+LANGUAGE_URL = API_BASE + '/languages/'
+
+TOKEN_URL = 'https://b.jw-cdn.org/tokens/jworg.jwt'
+SEARCH_URL = 'https://data.jw-api.org/search/query'
+
 
 class AttributeProxy(object):
     """A class which runs a function when accessing its attributes
