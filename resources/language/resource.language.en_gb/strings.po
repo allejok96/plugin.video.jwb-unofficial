@@ -84,3 +84,7 @@ msgstr ""
 msgctxt "#30026"
 msgid "Always use last selected language"
 msgstr ""
+
+msgctxt "#30027"
+msgid "Not available in selected language"
+msgstr ""

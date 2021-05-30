@@ -660,7 +660,15 @@ def resolve_media(media_key, lang=None):
 
     one_time_lang = addon.getSetting(SettingID.LANG_NEXT)
 
-    data = get_json(MEDIA_URL + (lang or one_time_lang or global_lang) + '/' + media_key)
+    data = get_json(MEDIA_URL + (one_time_lang or global_lang) + '/' + media_key)
+
+    # If set to always use foreign language, it may try to play a video in a language where it doesn't exist
+    # this does not happen when using the one-time language menu, because it looks up languages on individual videos
+    if one_time_lang and not data.get('media', None):
+        xbmcgui.Dialog().notification(addon.getAddonInfo('name'), S.NOT_AVAIL, icon=xbmcgui.NOTIFICATION_WARNING)
+        data = get_json(MEDIA_URL + global_lang + '/' + media_key)
+        one_time_lang = None
+
     media = Media()
     media.parse_media(data['media'][0], censor_hidden=False)
 

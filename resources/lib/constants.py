@@ -80,3 +80,4 @@ class LocalizedStringID(AttributeProxy):
     SHUFFLE_CAT = 30023
     AUDIO_ONLY = 30024
     CONN_ERR = 30025
+    NOT_AVAIL = 30027
