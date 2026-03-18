@@ -1,51 +1,23 @@
 # Licensed under the Apache License, Version 2.0
-from __future__ import unicode_literals, division, print_function, absolute_import
 
-import sys
-import os.path
 import json
+import os.path
 import random
+import sys
 import time
 import traceback
+from time import strftime
+from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qs, urlencode
+from urllib.request import Request, urlopen
 
-from kodi_six import xbmc, xbmcaddon, xbmcgui, xbmcplugin, py2_decode, py2_encode
+import xbmc
+import xbmcaddon
+import xbmcgui
+import xbmcplugin
 
 from resources.lib.constants import Query as Q, Mode as M, SettingID, LocalizedStringID
 from resources.lib.constants import CATEGORY_URL, LANGUAGE_URL, MEDIA_URL, SEARCH_URL, TOKEN_URL, TRANSLATION_URL
-
-try:
-    from urllib.error import HTTPError, URLError
-    from urllib.request import urlopen, Request
-    from urllib.parse import parse_qs, urlencode
-    from time import strftime
-
-except ImportError:
-    from urlparse import parse_qs as _parse_qs
-    from urllib2 import urlopen, Request, HTTPError, URLError
-    from urllib import urlencode as _urlencode
-    from time import strftime as _strftime
-
-
-    # Py2: urlencode only accepts byte strings
-    def urlencode(query):
-        # Dict[str, str] -> str
-        return py2_decode(_urlencode({py2_encode(param): py2_encode(arg) for param, arg in query.items()}))
-
-
-    # Py2: even if parse_qs accepts unicode, the return makes no sense
-    def parse_qs(qs):
-        # str -> Dict[str, List[str]]
-        return {py2_decode(param): [py2_decode(a) for a in args]
-                for param, args in _parse_qs(py2_encode(qs)).items()}
-
-
-    # Py2: strftime returns byte string
-    def strftime(format, t=None):
-        return py2_decode(_strftime(py2_encode(format)))
-
-
-    # Py2: When using str, we mean unicode string
-    str = unicode
 
 
 def log(msg, level=xbmc.LOGDEBUG):
@@ -129,9 +101,14 @@ class Directory(object):
         li.setInfo('video', {'plot': self.description})
 
         if self.streamable:
+            context_menu = []
             query = {Q.MODE: M.STREAM, Q.STREAMKEY: self.key}
             action = 'RunPlugin(' + request_to_self(query) + ')'
-            li.addContextMenuItems([(S.SHUFFLE_CAT, action)])
+            context_menu.append((S.SHUFFLE_CAT, action))
+            query = {Q.MODE: M.STREAM_LANG, Q.STREAMKEY: self.key}
+            action = 'RunPlugin(' + request_to_self(query) + ')'
+            context_menu.append((S.SHUFFLE_LANG, action))
+            li.addContextMenuItems(context_menu)
 
         return li
 
@@ -497,10 +474,14 @@ def sub_level_page(sub_level):
     xbmcplugin.endOfDirectory(addon_handle)
 
 
-def shuffle_category(key):
-    """Generate a shuffled playlist and start playing"""
+def shuffle_category(key, lang=None):
+    """Generate a shuffled playlist and start playing
 
-    data = get_json(CATEGORY_URL + global_lang + '/' + key + '?&detailed=1')
+    :param key: category key
+    :param lang: language code, defaults to global_lang
+    """
+    lang = lang or global_lang
+    data = get_json(CATEGORY_URL + lang + '/' + key + '?&detailed=1')
     data = data['category']
     all_media = data.get('media', [])
     for sc in data.get('subcategories', []):  # type: dict
@@ -521,6 +502,28 @@ def shuffle_category(key):
             pl.add(media.resolved_url, media.listitem())
 
     xbmc.Player().play(pl)
+
+
+def shuffle_language_dialog(key):
+    """Show a dialog with the user's saved languages, then shuffle the category in the chosen language
+
+    :param key: category key to shuffle
+    """
+    history = addon.getSetting(SettingID.LANG_HIST).split()
+    if not history:
+        shuffle_category(key)
+        return
+
+    data = get_json(LANGUAGE_URL + global_lang + '/web')
+    lang_lookup = {l['code']: l.get('name', '') + ' / ' + l.get('vernacular', '')
+                   for l in data['languages']}
+
+    codes = [h for h in history if h in lang_lookup]
+    names = [lang_lookup[c] for c in codes]
+
+    selection = xbmcgui.Dialog().select('', names)
+    if selection >= 0:
+        shuffle_category(key, lang=codes[selection])
 
 
 def language_dialog(media_key=None):
@@ -748,6 +751,8 @@ if __name__ == '__main__':
         sub_level_page(args[Q.CATKEY])
     elif mode == M.STREAM:
         shuffle_category(args[Q.STREAMKEY])
+    elif mode == M.STREAM_LANG:
+        shuffle_language_dialog(args[Q.STREAMKEY])
     # Backwards compatibility
     elif mode.startswith('Streaming') and mode != 'Streaming':
         shuffle_category(mode)

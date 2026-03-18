@@ -88,3 +88,7 @@ msgstr ""
 msgctxt "#30027"
 msgid "Not available in selected language"
 msgstr ""
+
+msgctxt "#30028"
+msgid "Shuffle in language"
+msgstr ""
