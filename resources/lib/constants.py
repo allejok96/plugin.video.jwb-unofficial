@@ -3,7 +3,7 @@ Static variables to simplify for the IDE, and a proxy object for translation IDs
 """
 from __future__ import absolute_import, division, unicode_literals
 
-API_BASE = 'https://data.jw-api.org/mediator/v1'
+API_BASE = 'https://b.jw-cdn.org/apis/mediator/v1'
 TRANSLATION_URL = API_BASE + '/translations/'
 CATEGORY_URL = API_BASE + '/categories/'
 MEDIA_URL = API_BASE + '/media-items/'
