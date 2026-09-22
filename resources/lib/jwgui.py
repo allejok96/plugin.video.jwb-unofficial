@@ -39,7 +39,7 @@ def create_category_item(c: Category, *, fanart=None) -> ListItem:
             (tr(Play_in_another_language), LanguageRequest(shuffle_category=c.key, hidden=hidden).url)
         ],
         type=ItemType.FOLDER,
-        url=BrowseRequest(category=c.key, hidden=hidden, media=has_media(c)).url,
+        url=BrowseRequest(category=c.key, hidden=hidden, media=_has_media(c)).url,
     )
 
 
@@ -50,7 +50,7 @@ def create_media_item_with_url(m: Media, *, url: str) -> ListItem:
         title=m.title,
         date=m.published,
         description=m.description,
-        duration=m.duration,
+        duration=int(m.duration),
         icon=m.get_image(),
         menu=[
             (tr(Play_in_another_language), LanguageRequest(play_media=m.key, hidden=is_hidden(m)).url),
@@ -110,7 +110,7 @@ def show_disclaimer():
     kodi().text_dialog(tr(Theocratic_warning), tr(Full_disclaimer))
 
 
-def has_media(category: Category) -> bool:
+def _has_media(category: Category) -> bool:
     """True if we can expect to find media in this category"""
 
     return category.type == CATEGORY_ONDEMAND

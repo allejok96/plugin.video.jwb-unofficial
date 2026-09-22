@@ -9,18 +9,14 @@ from resources.lib.requests import BrowseRequest
 from resources.lib.settings import settings
 from resources.lib.translations import *
 
-__all__ = (
-    'browse_endpoint',
-)
 
-
-def is_unseen_convention(category: str) -> bool:
+def _is_unseen_convention(category: str) -> bool:
     """Safety question for convention releases"""
     return (is_convention_release_root(category)
             and not kodi().question_dialog('', tr(Have_you_attended_the_convention)))
 
 
-def merge_category_items(cats: List[Category]) -> List[ListItem]:
+def _merge_category_items(cats: List[Category]) -> List[ListItem]:
     """Extract unique ListItems from one or more categories (different languages)
 
     Duplicate items are ignored (language agnostic), only the first occurrence is kept.
@@ -42,7 +38,8 @@ def merge_category_items(cats: List[Category]) -> List[ListItem]:
 
     return items
 
-def sort_items_in_place(items: List[ListItem]):
+
+def _sort_items_in_place(items: List[ListItem]):
     """Sort newest first and folders on top"""
     items.sort(key=lambda item: (item.type is ItemType.FOLDER, item.date), reverse=True)
 
@@ -50,7 +47,7 @@ def sort_items_in_place(items: List[ListItem]):
 def browse_endpoint(request: BrowseRequest) -> None:
     """API endpoint that shows a page of subcategories and/or media"""
 
-    if is_unseen_convention(request.category):
+    if _is_unseen_convention(request.category):
         return
 
     cats = get_category_multilanguage(
@@ -60,8 +57,8 @@ def browse_endpoint(request: BrowseRequest) -> None:
         include_media=request.media,
     )
 
-    items = merge_category_items(cats)
+    items = _merge_category_items(cats)
 
-    sort_items_in_place(items)
+    _sort_items_in_place(items)
 
     kodi().add_items(items)

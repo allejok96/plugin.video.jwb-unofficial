@@ -7,13 +7,13 @@ from resources.lib.requests import BrowseRequest
 
 
 def test_is_unseen_convention(kodi, monkeypatch):
-    assert browse.is_unseen_convention('VODStudio') is False
+    assert browse._is_unseen_convention('VODStudio') is False
 
     kodi.user_bool = True # Have you attended? Yes.
-    assert browse.is_unseen_convention('ConvReleases') is False
+    assert browse._is_unseen_convention('ConvReleases') is False
 
     kodi.user_bool = False  # Have you attended? No.
-    assert browse.is_unseen_convention('ConvReleases') is True
+    assert browse._is_unseen_convention('ConvReleases') is True
 
 
 def test_merge_category_items(sessions):
@@ -58,7 +58,7 @@ def test_merge_category_items(sessions):
         ],
     )
 
-    merged = browse.merge_category_items([parent_E, parent_Z])
+    merged = browse._merge_category_items([parent_E, parent_Z])
 
     assert set(item.title for item in merged) == {
         'First subcategory',
@@ -78,7 +78,7 @@ def test_sort_items_in_place():
         ListItem("6. Middle video", 'URL6', ItemType.VIDEO, date="2026-01-02"),
     ]
 
-    browse.sort_items_in_place(items)
+    browse._sort_items_in_place(items)
 
     assert [item.title[3:] for item in items] == [
         "Newest folder",

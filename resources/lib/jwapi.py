@@ -8,7 +8,6 @@ import resources.lib.jwlib.media as jwlib
 from resources.lib.jwlib.media import BaseSession, Category, Media, File, NotFoundError
 from resources.lib.jwlib.media.const import CLIENT_APPLETV, CLIENT_NONE, TAG_EXCLUDE_APPLETV
 
-from resources.lib.kodi import kodi, LogLevel
 from resources.lib.settings import settings, SubtitleMode
 
 __all__ = (
@@ -28,21 +27,6 @@ def get_session(lang: str = '', *, hidden: bool) -> BaseSession:
 
     client = CLIENT_NONE if hidden else CLIENT_APPLETV
     return jwlib.get_session(lang or settings.language, client)
-
-
-def _get_media_cached(key: str, lang: str, *, hidden: bool) -> Optional[Media]:
-    """Return a Media object, or None if it did not exist
-
-    This function is cached as an easy solution to the logic in the play endpoint, where get_media()
-    is called once for title, once for video and once for subtitles. It's easier to do that
-    and cache the result, than to somehow keep track of languages and what languages need to
-    be checked and whatnot.
-
-    TODO this breaks pytest
-
-    This also caches 404 errors by returning None. That prevents us from trying to lookup
-    a missing video multiple times.
-    """
 
 
 def _rank_file(file: File) -> Tuple[bool, bool, int]:

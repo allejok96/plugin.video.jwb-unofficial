@@ -1,4 +1,3 @@
-import resources.lib.settings
 from resources.lib.settings import settings, SubtitleMode
 
 

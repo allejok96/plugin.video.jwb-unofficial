@@ -11,26 +11,26 @@ def swedish() -> Language:
 
 
 def test_filter_languages(languages):
-    filtered = list(langlist.filter_languages(languages, ['E', 'F']))
+    filtered = list(langlist._filter_languages(languages, ['E', 'F']))
     assert [lang.code for lang in filtered] == ['E', 'F']
 
 
 def test_sort_languages_recent_and_english_first(kodi, languages):
     kodi.settings['lang_history'] = 'F Z'
 
-    sorted_langs = langlist.sort_languages(languages)
+    sorted_langs = langlist._sort_languages(languages)
 
     assert [lang.code for lang in sorted_langs] == ['E', 'F', 'Z', 'D']
 
 
 def test_format_language(swedish):
-    assert langlist.format_language(swedish) == 'Swedish / Svenska'
+    assert langlist._format_language(swedish) == 'Swedish / Svenska'
 
 
 def test_build_query_shuffle_category(kodi, swedish):
     request = LanguageRequest(hidden=True, shuffle_category='SomeCat')
 
-    assert langlist.build_query(request, swedish) == ShuffleRequest(
+    assert langlist._build_query(request, swedish) == ShuffleRequest(
         category='SomeCat', hidden=True, lang='Z'
     ).url
 
@@ -38,7 +38,7 @@ def test_build_query_shuffle_category(kodi, swedish):
 def test_build_query_play_media(kodi, swedish):
     request = LanguageRequest(hidden=False, play_media='SomeMedia')
 
-    assert langlist.build_query(request, swedish) == PlayRequest(
+    assert langlist._build_query(request, swedish) == PlayRequest(
         media='SomeMedia', hidden=False, lang='Z'
     ).url
 
@@ -46,7 +46,7 @@ def test_build_query_play_media(kodi, swedish):
 def test_build_query_set_lang1(kodi, swedish):
     request = LanguageRequest(hidden=False, set_lang1=True)
 
-    assert langlist.build_query(request, swedish) == ConfigRequest(
+    assert langlist._build_query(request, swedish) == ConfigRequest(
         lang1='Z', label='Swedish / Svenska'
     ).url
 
@@ -54,7 +54,7 @@ def test_build_query_set_lang1(kodi, swedish):
 def test_build_query_set_lang2(kodi, swedish):
     request = LanguageRequest(hidden=False, set_lang2=True)
 
-    assert langlist.build_query(request, swedish) == ConfigRequest(
+    assert langlist._build_query(request, swedish) == ConfigRequest(
         lang2='Z', label='Swedish / Svenska'
     ).url
 
@@ -62,7 +62,7 @@ def test_build_query_set_lang2(kodi, swedish):
 def test_build_actions(kodi, languages):
     request = LanguageRequest(hidden=False, set_lang1=True)
 
-    actions = langlist.build_actions(request, languages)
+    actions = langlist._build_actions(request, languages)
 
     assert 'Swedish / Svenska' in [a.label for a in actions]
     assert 'RunPlugin(' + ConfigRequest(lang1='Z', label='Swedish / Svenska').url + ')' in [a.command for a in actions]

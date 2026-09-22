@@ -1,12 +1,20 @@
 # Licensed under the Apache License, Version 2.0
 
-from resources.lib.compat import migrate_settings
-from resources.lib.endpoints import *
-from resources.lib.jwgui import show_disclaimer
 from resources.lib.jwlib.media import NotFoundError
+
+from resources.lib.compat import migrate_settings
+from resources.lib.endpoints.browse import browse_endpoint
+from resources.lib.endpoints.config import config_endpoint
+from resources.lib.endpoints.home import home_endpoint
+from resources.lib.endpoints.langlist import langlist_endpoint
+from resources.lib.endpoints.play import play_endpoint
+from resources.lib.endpoints.search import search_endpoint
+from resources.lib.endpoints.shuffle import shuffle_endpoint
+from resources.lib.jwgui import show_disclaimer
 from resources.lib.kodi import kodi
 from resources.lib.log import configure_logging, notify_and_log_traceback
-from resources.lib.requests import *
+from resources.lib.requests import (BrowseRequest, ConfigRequest, DisclaimerRequest,
+                                    LanguageRequest, PlayRequest, SearchRequest, ShuffleRequest)
 from resources.lib.translations import *
 
 

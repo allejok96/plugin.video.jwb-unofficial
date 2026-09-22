@@ -6,7 +6,8 @@ from enum import Enum
 from typing import List
 
 import resources.lib.jwlib.media as jwlib
-from resources.lib.kodi import kodi, LogLevel
+
+from resources.lib.kodi import kodi
 
 __all__ = (
     'SubtitleMode',

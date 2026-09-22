@@ -2,7 +2,7 @@ import logging
 from typing import List, Callable, Tuple
 
 from resources.lib.jwapi import get_session
-from resources.lib.kodi import kodi, LogLevel
+from resources.lib.kodi import kodi
 from resources.lib.settings import settings, SubtitleMode
 
 __all__ = (

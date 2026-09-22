@@ -11,20 +11,17 @@ from resources.lib.kodi import kodi, ListItem, ItemType
 from resources.lib.requests import SearchRequest
 from resources.lib.settings import settings
 
-__all__ = (
-    'home_endpoint',
-)
-
 logger = logging.getLogger(__name__)
 
-def first_time_setup():
+
+def _first_time_setup():
     if settings.first_run:
         settings.first_run = False
-        set_addon_lang_from_system_lang(kodi().get_system_language(), try_get_jw_languages())
+        _set_addon_lang_from_system_lang(kodi().get_system_language(), _try_get_jw_languages())
         show_disclaimer()
 
 
-def try_get_jw_languages() -> List[Language]:
+def _try_get_jw_languages() -> List[Language]:
     try:
         return get_session(hidden=False).get_languages()
     except Exception:
@@ -32,7 +29,7 @@ def try_get_jw_languages() -> List[Language]:
         return []
 
 
-def set_addon_lang_from_system_lang(iso_lang: str, jw_languages: List[Language]):
+def _set_addon_lang_from_system_lang(iso_lang: str, jw_languages: List[Language]):
     """Set addon language to system language"""
     try:
         language = next(lang for lang in jw_languages if lang.iso == iso_lang)
@@ -43,7 +40,7 @@ def set_addon_lang_from_system_lang(iso_lang: str, jw_languages: List[Language])
     settings.set_language(language.code, f'{language.name} / {language.vernacular}')
 
 
-def get_root_categories() -> List[Category]:
+def _get_root_categories() -> List[Category]:
     # To see if there is a convention release page we need to show hidden items
     # TODO potential bug: if there are top level categories in fallback language but not in default language
     root = get_category_multilanguage(ROOT_CATEGORY, languages=[settings.language], hidden=True, include_media=False)[0]
@@ -53,17 +50,17 @@ def get_root_categories() -> List[Category]:
             if not is_hidden(cat)]
 
 
-def get_fanart_path() -> str:
+def _get_fanart_path() -> str:
     return str(Path(kodi().get_addon_path()) / kodi().get_addon_fanart())
 
 
 def home_endpoint():
     """API endpoint for the main menu"""
 
-    first_time_setup()
+    _first_time_setup()
 
-    fanart = get_fanart_path()
-    cats = get_root_categories()
+    fanart = _get_fanart_path()
+    cats = _get_root_categories()
     items = [create_category_item(c, fanart=fanart) for c in cats]
 
     items.append(ListItem(

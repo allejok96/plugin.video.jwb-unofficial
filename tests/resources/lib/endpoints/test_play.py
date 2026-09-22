@@ -12,19 +12,19 @@ def test_get_title_language():
 
     settings.enable_fallback = False
     settings.original_audio = False
-    assert play.get_title_language('') == ['DEFAULT', 'DEFAULT']
+    assert play._get_title_language('') == ['DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = False
     settings.original_audio = True
-    assert play.get_title_language('') == ['DEFAULT', 'DEFAULT']
+    assert play._get_title_language('') == ['DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = True
     settings.original_audio = False
-    assert play.get_title_language('') == ['DEFAULT', 'SECOND']
+    assert play._get_title_language('') == ['DEFAULT', 'SECOND']
 
     settings.enable_fallback = True
     settings.original_audio = True
-    assert play.get_title_language('') == ['DEFAULT', 'SECOND']
+    assert play._get_title_language('') == ['DEFAULT', 'SECOND']
 
 
 def test_get_title_and_playback_language_explicit():
@@ -35,9 +35,9 @@ def test_get_title_and_playback_language_explicit():
         for original in (False, True):
             settings.enable_fallback = fallback
             settings.original_audio = original
-            assert play.get_title_language('EXPLICIT') == ['EXPLICIT']
-            assert play.get_playback_language('EXPLICIT', is_video=True) == ['EXPLICIT']
-            assert play.get_playback_language('EXPLICIT', is_video=False) == ['EXPLICIT']
+            assert play._get_title_language('EXPLICIT') == ['EXPLICIT']
+            assert play._get_playback_language('EXPLICIT', is_video=True) == ['EXPLICIT']
+            assert play._get_playback_language('EXPLICIT', is_video=False) == ['EXPLICIT']
 
 
 def test_get_video_playback_language():
@@ -46,19 +46,19 @@ def test_get_video_playback_language():
 
     settings.enable_fallback = False
     settings.original_audio = False
-    assert play.get_playback_language('', is_video=True) == ['DEFAULT', 'DEFAULT', 'DEFAULT']
+    assert play._get_playback_language('', is_video=True) == ['DEFAULT', 'DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = True
     settings.original_audio = False
-    assert play.get_playback_language('', is_video=True) == ['DEFAULT', 'DEFAULT', 'SECOND']
+    assert play._get_playback_language('', is_video=True) == ['DEFAULT', 'DEFAULT', 'SECOND']
 
     settings.enable_fallback = False
     settings.original_audio = True
-    assert play.get_playback_language('', is_video=True) == ['SECOND', 'DEFAULT', 'DEFAULT']
+    assert play._get_playback_language('', is_video=True) == ['SECOND', 'DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = True
     settings.original_audio = True
-    assert play.get_playback_language('', is_video=True) == ['SECOND', 'DEFAULT', 'SECOND']
+    assert play._get_playback_language('', is_video=True) == ['SECOND', 'DEFAULT', 'SECOND']
 
 def test_get_audio_playback_language():
     settings.set_language('DEFAULT', 'Default')
@@ -66,25 +66,25 @@ def test_get_audio_playback_language():
 
     settings.enable_fallback = False
     settings.original_audio = False
-    assert play.get_playback_language('', is_video=False) == ['DEFAULT', 'DEFAULT']
+    assert play._get_playback_language('', is_video=False) == ['DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = False
     settings.original_audio = True
-    assert play.get_playback_language('', is_video=False) == ['DEFAULT', 'DEFAULT']
+    assert play._get_playback_language('', is_video=False) == ['DEFAULT', 'DEFAULT']
 
     settings.enable_fallback = True
     settings.original_audio = False
-    assert play.get_playback_language('', is_video=False) == ['DEFAULT', 'SECOND']
+    assert play._get_playback_language('', is_video=False) == ['DEFAULT', 'SECOND']
 
     settings.enable_fallback = True
     settings.original_audio = True
-    assert play.get_playback_language('', is_video=False) == ['DEFAULT', 'SECOND']
+    assert play._get_playback_language('', is_video=False) == ['DEFAULT', 'SECOND']
 
 
 def test_get_media_duplicate_languages_ignored(session):
     session.media = {'MediaKey': Media.create(key='MediaKey', session=session)}
 
-    cache = play.MultiLanguageMediaCache(key='MediaKey', hidden=False)
+    cache = play._MultiLangMediaCache(key='MediaKey', hidden=False)
     cache.get(['E', 'E'])
     cache.get(['E'])
 
@@ -94,7 +94,7 @@ def test_get_media_duplicate_languages_ignored(session):
 def test_get_media_duplicate_fails_ignored(session):
     session.missing_media.add('InvalidMedia')
 
-    cache = play.MultiLanguageMediaCache(key='InvalidMedia', hidden=False)
+    cache = play._MultiLangMediaCache(key='InvalidMedia', hidden=False)
 
     with pytest.raises(NotFoundError):
         cache.get(['E', 'E'])
@@ -107,21 +107,21 @@ def test_get_media_duplicate_fails_ignored(session):
 
 def test_get_subtitle_visibility_off(kodi):
     settings.subtitle_mode = SubtitleMode.OFF
-    assert play.get_subtitle_visibility('E') is False
-    assert play.get_subtitle_visibility('Z') is False
+    assert play._get_subtitle_visibility('E') is False
+    assert play._get_subtitle_visibility('Z') is False
 
 
 def test_get_subtitle_visibility_on(kodi):
     settings.subtitle_mode = SubtitleMode.ON
-    assert play.get_subtitle_visibility('E') is True
-    assert play.get_subtitle_visibility('Z') is True
+    assert play._get_subtitle_visibility('E') is True
+    assert play._get_subtitle_visibility('Z') is True
 
 
 def test_get_subtitle_visibility_orig_and_foreign(kodi):
     settings.subtitle_mode = SubtitleMode.ORIG_AND_FOREIGN
     settings.set_language('E', 'English')
-    assert play.get_subtitle_visibility('E') is False
-    assert play.get_subtitle_visibility('Z') is True
+    assert play._get_subtitle_visibility('E') is False
+    assert play._get_subtitle_visibility('Z') is True
 
 
 def test_get_subtitle_visibility_foreign(kodi):
@@ -130,18 +130,18 @@ def test_get_subtitle_visibility_foreign(kodi):
     settings.set_second_language('E', 'English')
     settings.original_audio = True
 
-    assert play.get_subtitle_visibility('Z') is False  # own language
-    assert play.get_subtitle_visibility('E') is False  # original audio language
-    assert play.get_subtitle_visibility('F') is True  # a foreign language
+    assert play._get_subtitle_visibility('Z') is False  # own language
+    assert play._get_subtitle_visibility('E') is False  # original audio language
+    assert play._get_subtitle_visibility('F') is True  # a foreign language
 
 
 def test_set_subtitle_visibility(kodi):
     kodi.currently_playing_subtitles = ['example.vtt']
 
-    play.set_subtitle_visibility(True)
+    play._set_subtitle_visibility(True)
     assert kodi.subtitle_visibility is True
 
-    play.set_subtitle_visibility(False)
+    play._set_subtitle_visibility(False)
     assert kodi.subtitle_visibility is False
 
 
@@ -152,20 +152,20 @@ def test_get_subtitles_found(session):
     )
     session.media['MediaKey'] = media
 
-    assert play.get_subtitles(play.MultiLanguageMediaCache('MediaKey', hidden=False)) == ['subs.vtt']
+    assert play._get_subtitles(play._MultiLangMediaCache('MediaKey', hidden=False)) == ['subs.vtt']
 
 
 def test_get_subtitles_none_available(session):
     media = Media.create(key='MediaKey', session=session, files=[File.create(url='video.mp4')])
     session.media['MediaKey'] = media
 
-    assert play.get_subtitles(play.MultiLanguageMediaCache('MediaKey', hidden=False)) == []
+    assert play._get_subtitles(play._MultiLangMediaCache('MediaKey', hidden=False)) == []
 
 
 def test_get_subtitles_not_found(session):
     session.missing_media.add('MediaKey')
 
-    assert play.get_subtitles(play.MultiLanguageMediaCache('MediaKey', hidden=False)) == []
+    assert play._get_subtitles(play._MultiLangMediaCache('MediaKey', hidden=False)) == []
 
 
 def test_play_media(kodi, session):
@@ -175,7 +175,7 @@ def test_play_media(kodi, session):
     )
     session.media['MediaKey'] = media
 
-    play.play_media('MediaKey', request_lang='', hidden=False)
+    play._play_media('MediaKey', request_lang='', hidden=False)
     assert kodi.resolved.url == 'video.mp4'
 
 

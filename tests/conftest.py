@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import List, Dict, NamedTuple
+from typing import NamedTuple
 
 import pytest
 
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import resources.lib.kodi
 import resources.lib.jwlib.media as jwlib
 from resources.lib.kodi.fake import FakeKodiInterface
-from resources.lib.jwlib.media import Category, Media, Language, NotFoundError, BaseSession, File, Subtitle, const
+from resources.lib.jwlib.media import Category, Media, Language, NotFoundError, BaseSession, const
 from resources.lib.jwlib.media.const import CLIENT_FIRETV, CLIENT_NONE, CLIENT_APPLETV
 
 

@@ -2,8 +2,7 @@ import logging
 
 import pytest
 
-import resources.lib.settings
-from resources.lib.endpoints import config_endpoint
+from resources.lib.endpoints.config import config_endpoint
 from resources.lib.requests import ConfigRequest
 from resources.lib.settings import settings
 

@@ -37,7 +37,7 @@ def test_create_category_item_hidden(session):
 def test_has_media(session, cat_type, expected):
     cat = Category.create(key='A', name='Category A', session=session, type=cat_type)
 
-    assert jwgui.has_media(cat) is expected
+    assert jwgui._has_media(cat) is expected
 
 
 @pytest.mark.parametrize('cat_type, expected_media', [(CATEGORY_ONDEMAND, True), (CATEGORY_CONTAINER, False)])

@@ -8,21 +8,11 @@ from urllib.parse import urlencode
 from resources.lib.jwapi import is_convention_release_root
 from resources.lib.kodi import kodi
 
-__all__ = (
-    'BrowseRequest',
-    'ConfigRequest',
-    'DisclaimerRequest',
-    'LanguageRequest',
-    'PlayRequest',
-    'SearchRequest',
-    'ShuffleRequest',
-)
-
-T = TypeVar('T', bound='Request')
+T = TypeVar('T', bound='_Request')
 
 
 @dataclass
-class Request:
+class _Request:
     """Base class for requests to the addon itself"""
 
     default_values: ClassVar[Dict[str, Any]] = {}
@@ -104,7 +94,7 @@ class Request:
 
 
 @dataclass
-class BrowseRequest(Request):
+class BrowseRequest(_Request):
     """Show a category page
 
     :param category: Category code
@@ -126,7 +116,7 @@ class BrowseRequest(Request):
 
 
 @dataclass
-class ConfigRequest(Request):
+class ConfigRequest(_Request):
     """Store a user setting
 
     :param lang1: Set the main language
@@ -144,7 +134,7 @@ class ConfigRequest(Request):
 
 
 @dataclass
-class DisclaimerRequest(Request):
+class DisclaimerRequest(_Request):
     """Show the disclaimer
 
     CAREFUL: if you rename this, you must update settings.xml too.
@@ -153,7 +143,7 @@ class DisclaimerRequest(Request):
 
 
 @dataclass
-class LanguageRequest(Request):
+class LanguageRequest(_Request):
     """Show a list of languages and perform an action when the user selects a language
 
     :param hidden: Needs to be True if the media or category is a convention release (slower)
@@ -179,7 +169,7 @@ class LanguageRequest(Request):
 
 
 @dataclass
-class PlayRequest(Request):
+class PlayRequest(_Request):
     """Play a media item
 
     :param media: Media code
@@ -202,7 +192,7 @@ class PlayRequest(Request):
 
 
 @dataclass
-class SearchRequest(Request):
+class SearchRequest(_Request):
     """Open a search box or a search result page
 
     :param q: Search query (empty = display search box)
@@ -217,7 +207,7 @@ class SearchRequest(Request):
 
 
 @dataclass
-class ShuffleRequest(Request):
+class ShuffleRequest(_Request):
     """Start playing random videos from a category
 
     :param category: Category code

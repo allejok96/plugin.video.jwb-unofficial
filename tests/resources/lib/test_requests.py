@@ -3,12 +3,12 @@ from dataclasses import dataclass
 import pytest
 
 from resources.lib.requests import (
-    BrowseRequest, ConfigRequest, LanguageRequest, PlayRequest, Request, ShuffleRequest,
+    BrowseRequest, ConfigRequest, LanguageRequest, PlayRequest, _Request, ShuffleRequest,
 )
 
 
 @dataclass
-class DummyRequest(Request):
+class DummyRequest(_Request):
     """Stand-in Request subclass used to test the from_dict()/default_values mechanism
     in isolation, without depending on the invariants of any real endpoint's Request.
     """
@@ -97,7 +97,7 @@ def test_from_dict_still_requires_fields_without_a_default_values_entry():
 
 def test_from_dict_rejects_mismatched_default_value_type():
     @dataclass
-    class BadDefaultRequest(Request):
+    class BadDefaultRequest(_Request):
         mode = 'bad'
         default_values = {'count': 'not-an-int'}
 
@@ -109,7 +109,7 @@ def test_from_dict_rejects_mismatched_default_value_type():
 
 def test_from_dict_rejects_unsupported_field_type():
     @dataclass
-    class UnsupportedTypeRequest(Request):
+    class UnsupportedTypeRequest(_Request):
         mode = 'unsupported'
 
         value: float

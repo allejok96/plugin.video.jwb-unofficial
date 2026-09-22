@@ -15,26 +15,26 @@ __all__ = (
 )
 
 
-def get_all_media(category: Category) -> Iterator[Media]:
+def _get_all_media(category: Category) -> Iterator[Media]:
     """Iterator of all media items, depth first"""
 
     for subcat in category.get_subcategories():
-        yield from get_all_media(subcat)
+        yield from _get_all_media(subcat)
     yield from category.get_media()
 
 
-def get_unique_media_from_categories(categories: Iterable[Category]) -> List[Media]:
+def _get_unique_media_from_categories(categories: Iterable[Category]) -> List[Media]:
     seen_media: Set[str] = set()
     media = []
     for cat in categories:
-        for m in get_all_media(cat):
+        for m in _get_all_media(cat):
             if m.key not in seen_media:
                 seen_media.add(m.key)
                 media.append(m)
     return media
 
 
-def create_language_agnostic_media_item(media: Media, requested_lang: str) -> ListItem:
+def _create_language_agnostic_media_item(media: Media, requested_lang: str) -> ListItem:
     # TODO language agnostic watch status for shuffle in another language
     # There are multiple possible solutions that I can think of that doesn't work
     # 1. Let the request redirect, just like play requests.
@@ -86,9 +86,9 @@ def shuffle_endpoint(request: ShuffleRequest):
         include_media=True,
     )
 
-    media = get_unique_media_from_categories(cats)
+    media = _get_unique_media_from_categories(cats)
 
-    playlist = [create_language_agnostic_media_item(m, request.lang) for m in media]
+    playlist = [_create_language_agnostic_media_item(m, request.lang) for m in media]
 
     # Shuffle in place, we don't want to mess with Kodi's settings
     random.shuffle(playlist)

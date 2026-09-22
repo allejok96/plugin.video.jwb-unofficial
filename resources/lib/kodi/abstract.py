@@ -5,7 +5,7 @@ This makes it easier to do version-specific stuff and unit testing.
 """
 
 from abc import abstractmethod, ABC
-from dataclasses import field, dataclass, asdict
+from dataclasses import field, dataclass
 from enum import Enum, auto
 from typing import List, Tuple, Dict, final, Union, Sequence, Optional
 from urllib.parse import parse_qs

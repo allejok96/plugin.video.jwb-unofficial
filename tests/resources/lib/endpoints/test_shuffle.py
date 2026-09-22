@@ -15,7 +15,7 @@ def test_get_all_media_is_depth_first(session):
         media=[Media.create(key='RootMedia', session=session)],
     )
 
-    media = list(shuffle.get_all_media(root))
+    media = list(shuffle._get_all_media(root))
 
     assert [m.key for m in media] == ['LeafMedia', 'RootMedia']
 
@@ -33,7 +33,7 @@ def test_get_unique_media_from_categories_deduplicates(sessions):
         Media.create(key='C', title='Third', session=s2),
     ])
 
-    media = shuffle.get_unique_media_from_categories([cat1, cat2])
+    media = shuffle._get_unique_media_from_categories([cat1, cat2])
 
     assert [m.key for m in media] == ['A', 'B', 'C']
 
@@ -41,7 +41,7 @@ def test_get_unique_media_from_categories_deduplicates(sessions):
 def test_create_language_agnostic_media_item_no_lang(kodi, session):
     media = Media.create(key='MediaKey', title='Some video', session=session)
 
-    item = shuffle.create_language_agnostic_media_item(media, '')
+    item = shuffle._create_language_agnostic_media_item(media, '')
 
     assert item.url == PlayRequest(media='MediaKey', hidden=False).url
 
@@ -52,7 +52,7 @@ def test_create_language_agnostic_media_item_audio_with_lang(kodi, session):
         files=[File.create(url='audio.mp3')],
     )
 
-    item = shuffle.create_language_agnostic_media_item(media, 'Z')
+    item = shuffle._create_language_agnostic_media_item(media, 'Z')
 
     assert item.url == media.get_file().url
 
@@ -60,7 +60,7 @@ def test_create_language_agnostic_media_item_audio_with_lang(kodi, session):
 def test_create_language_agnostic_media_item_video_with_lang(kodi, session):
     media = Media.create(key='MediaKey', title='Some video', type=MEDIA_VIDEO, session=session)
 
-    item = shuffle.create_language_agnostic_media_item(media, 'Z')
+    item = shuffle._create_language_agnostic_media_item(media, 'Z')
 
     assert item.url == PlayRequest(media='MediaKey', hidden=False, lang='Z', no_redirect=True).url
 

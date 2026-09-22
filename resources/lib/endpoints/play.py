@@ -11,14 +11,10 @@ from resources.lib.jwapi import get_media, get_best_url
 from resources.lib.kodi import kodi
 from resources.lib.settings import settings, SubtitleMode
 
-__all__ = (
-    'play_endpoint',
-)
-
 logger = logging.getLogger(__name__)
 
 
-class MultiLanguageMediaCache:
+class _MultiLangMediaCache:
     """This abomination is so I can lazily call get() for multiple languages
     in play_media without having to figure out how to do that efficiently"""
 
@@ -45,14 +41,14 @@ class MultiLanguageMediaCache:
         raise NotFoundError
 
 
-def get_title_language(request_lang: str):
+def _get_title_language(request_lang: str):
     if request_lang:
         return [request_lang]
     else:
         return [settings.language, settings.fallback_language]
 
 
-def get_playback_language(request_lang: str, is_video: bool):
+def _get_playback_language(request_lang: str, is_video: bool):
     if request_lang:
         return [request_lang]
     elif is_video:
@@ -61,7 +57,7 @@ def get_playback_language(request_lang: str, is_video: bool):
         return [settings.language, settings.fallback_language]
 
 
-def get_subtitle_visibility(lang: str):
+def _get_subtitle_visibility(lang: str):
     """Return True if subtitles should be displayed for the given language"""
     ss = settings.subtitle_mode
 
@@ -78,7 +74,7 @@ def get_subtitle_visibility(lang: str):
         return False
 
 
-def set_subtitle_visibility(visible: bool):
+def _set_subtitle_visibility(visible: bool):
     # Turn on/off subtitles without changing the global Kodi setting
     # TODO check if it can be set in ListItem in the future
     for i in range(20):
@@ -88,7 +84,7 @@ def set_subtitle_visibility(visible: bool):
         time.sleep(1)
 
 
-def get_subtitles(cached: MultiLanguageMediaCache) -> List[str]:
+def _get_subtitles(cached: _MultiLangMediaCache) -> List[str]:
     try:
         subtitle = cached.get([settings.language]).subtitle_url
         if subtitle:
@@ -99,28 +95,28 @@ def get_subtitles(cached: MultiLanguageMediaCache) -> List[str]:
     return []
 
 
-def play_media(media_id: str, request_lang: str, hidden: bool):
+def _play_media(media_id: str, request_lang: str, hidden: bool):
     """Play a media file"""
 
-    cached = MultiLanguageMediaCache(media_id, hidden=hidden)
+    cached = _MultiLangMediaCache(media_id, hidden=hidden)
 
-    title_languages = get_title_language(request_lang)
+    title_languages = _get_title_language(request_lang)
     title_item = cached.get(title_languages)
 
-    playback_languages = get_playback_language(request_lang, is_video=title_item.type == MEDIA_VIDEO)
+    playback_languages = _get_playback_language(request_lang, is_video=title_item.type == MEDIA_VIDEO)
     playback_item = cached.get(playback_languages)
 
     list_item = create_media_item(title_item)
     list_item.url = get_best_url(playback_item)
-    list_item.subtitles = get_subtitles(cached)  # TODO need to append subtitles for video's native language?
+    list_item.subtitles = _get_subtitles(cached)  # TODO need to append subtitles for video's native language?
 
     # Start playing
     kodi().set_resolved_url(list_item)
 
     if list_item.subtitles:
         playback_language = playback_item.session.language
-        want_subtitles = get_subtitle_visibility(playback_language)
-        set_subtitle_visibility(want_subtitles)
+        want_subtitles = _get_subtitle_visibility(playback_language)
+        _set_subtitle_visibility(want_subtitles)
 
 
 def play_endpoint(request: PlayRequest):
@@ -130,5 +126,5 @@ def play_endpoint(request: PlayRequest):
         settings.tmp_language = request.lang
         kodi().execute('PlayMedia(' + PlayRequest(media=request.media, hidden=False).url + ', resume)')
     else:
-        play_media(request.media, request.lang or settings.tmp_language, hidden=request.hidden)
+        _play_media(request.media, request.lang or settings.tmp_language, hidden=request.hidden)
         settings.tmp_language = ''

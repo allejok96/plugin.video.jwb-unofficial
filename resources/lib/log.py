@@ -7,13 +7,8 @@ import traceback
 
 from resources.lib.kodi import kodi, LogLevel
 
-__all__ = (
-    'configure_logging',
-    'notify_and_log_traceback',
-)
 
-
-class KodiLogForwarder(logging.Handler):
+class _KodiLogForwarder(logging.Handler):
     """Log handler that passes Python's logging messages to the Kodi logger"""
 
     LEVELS = {
@@ -34,7 +29,7 @@ class KodiLogForwarder(logging.Handler):
 
 
 def configure_logging():
-    logging.basicConfig(handlers=[KodiLogForwarder()], level=logging.DEBUG)
+    logging.basicConfig(handlers=[_KodiLogForwarder()], level=logging.DEBUG)
 
 
 def notify_and_log_traceback(message: str):

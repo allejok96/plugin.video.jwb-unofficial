@@ -10,14 +10,14 @@ def test_first_time_setup_configures_language_and_shows_disclaimer(kodi, session
     session.add_common_languages()
     kodi.system_language = 'sv'
 
-    home.first_time_setup()
+    home._first_time_setup()
 
     assert settings.language == 'Z'
     assert settings.first_run is False
     assert kodi.dialog_messages
 
     kodi.dialog_messages.clear()
-    home.first_time_setup()
+    home._first_time_setup()
 
     assert not kodi.dialog_messages
 
@@ -42,7 +42,7 @@ def test_get_root_categories(kodi, sessions):
         tags=[TAG_EXCLUDE_APPLETV],
     )
 
-    result = home.get_root_categories()
+    result = home._get_root_categories()
 
     assert [cat.key for cat in result] == ['Visible']
 
@@ -50,14 +50,14 @@ def test_get_root_categories(kodi, sessions):
 def test_set_addon_lang_from_system_lang(languages):
     assert settings.language == 'E'
 
-    home.set_addon_lang_from_system_lang('sv', languages)
+    home._set_addon_lang_from_system_lang('sv', languages)
 
     assert settings.language == 'Z'
 
 
 def test_set_addon_lang_from_system_lang_no_match(kodi, languages, caplog):
     with caplog.at_level(logging.DEBUG):
-        home.set_addon_lang_from_system_lang('xx', languages)
+        home._set_addon_lang_from_system_lang('xx', languages)
 
     assert settings.language == 'E'
     assert ('resources.lib.endpoints.home', logging.ERROR, "Failed to auto configure language to 'xx'") \
@@ -65,7 +65,7 @@ def test_set_addon_lang_from_system_lang_no_match(kodi, languages, caplog):
 
 
 def test_get_fanart_path():
-    assert home.get_fanart_path() == 'ADDON_PATH/FANART_PATH'
+    assert home._get_fanart_path() == 'ADDON_PATH/FANART_PATH'
 
 
 def test_home_endpoint(kodi, sessions):

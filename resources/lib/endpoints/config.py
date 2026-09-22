@@ -1,10 +1,6 @@
 from resources.lib.requests import ConfigRequest
 from resources.lib.settings import settings
 
-__all__ = (
-    'config_endpoint',
-)
-
 
 def config_endpoint(request: ConfigRequest):
     """API endpoint that stores a settings value"""

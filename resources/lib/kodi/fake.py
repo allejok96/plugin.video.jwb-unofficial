@@ -1,11 +1,11 @@
 """
 Mock implementation of Kodi interface, for unit testing
 """
+import xml.etree.ElementTree as ET
 from functools import lru_cache
-from typing import List, Union, Dict, Type, TypeVar, Tuple, Any, Sequence
+from typing import List, Union, Dict, TypeVar, Tuple, Sequence
 
 from resources.lib.kodi.abstract import KodiInterface, ListItem, LogLevel
-import xml.etree.ElementTree as ET
 
 _T = TypeVar('_T')
 
