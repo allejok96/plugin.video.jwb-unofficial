@@ -18,12 +18,12 @@ There are multiple ways you can install this add-on. You could use `git clone` o
 But the easiest way is to install it from my repo. This way you'll receive updates automatically (if I remember to upload them):
 
 1. Download [this ZIP](https://github.com/allejok96/repository.allejok96/raw/master/downloads/repository.allejok96.zip)
-1. In Kodi: click on "Add-ons"
-1. Click on the little box icon in the upper left hand corner
-1. "Install from zip file"
-1. Browse to the directory with the zip and select it
-1. Click on "Install from repository"
-1. "allejok96's Repository > Video add-ons > JWB Unofficial > Install"
+2. In Kodi: click on "Add-ons"
+3. Click on the little box icon in the upper left hand corner
+4. "Install from zip file"
+5. Browse to the directory with the zip and select it
+6. Click on "Install from repository"
+7. "allejok96's Repository > Video add-ons > JWB Unofficial > Install"
 
 ## Disclaimer
 
@@ -44,6 +44,6 @@ You may be of a different opinion, but please respect my personal decision. And 
 
 #### Is this legal?
 
-Yes, this is considered "proper use". The [Terms of Service](http://www.jw.org/en/terms-of-use/) allows for:
+Yes, this is considered "proper use". The [Terms of Service](http://www.jw.org/en/terms-of-use/) allow for:
 
 > distribution of free, non-commercial applications designed to download electronic files such as EPUB, PDF, MP3, and MP4 files from public areas of jw.org.
