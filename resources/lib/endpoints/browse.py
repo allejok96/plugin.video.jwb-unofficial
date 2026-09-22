@@ -57,7 +57,7 @@ def browse_endpoint(request: BrowseRequest) -> None:
         category=request.category,
         languages=[settings.language, settings.fallback_language],
         hidden=request.hidden,
-        include_media=False,
+        include_media=request.media,
     )
 
     items = merge_category_items(cats)

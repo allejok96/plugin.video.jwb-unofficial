@@ -105,6 +105,17 @@ def test_browse_endpoint(kodi, session):
     assert {item.title for item in kodi.screen_items} == {'Some media', 'Some subcategory'}
 
 
+@pytest.mark.parametrize('media', [True, False])
+def test_browse_endpoint_passes_media_to_session(kodi, session, media):
+    session.categories['CatKey'] = Category.create(
+        key='CatKey', name='Some category', session=session, type='container', subcategories=[],
+    )
+
+    browse.browse_endpoint(BrowseRequest(category='CatKey', hidden=False, media=media))
+
+    assert session.get_category_calls == [('CatKey', media)]
+
+
 def test_browse_endpoint_convention_not_attended(kodi):
     kodi.user_bool = True  # Have you attended? Yes.
     with pytest.raises(AssertionError):

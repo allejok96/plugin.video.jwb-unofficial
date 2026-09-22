@@ -1,6 +1,9 @@
+import pytest
+
 from resources.lib import jwgui
 from resources.lib.jwlib.media import Category, Media
-from resources.lib.jwlib.media.const import MEDIA_AUDIO, MEDIA_VIDEO, TAG_EXCLUDE_APPLETV
+from resources.lib.jwlib.media.const import CATEGORY_CONTAINER, CATEGORY_ONDEMAND, MEDIA_AUDIO, MEDIA_VIDEO, \
+    TAG_EXCLUDE_APPLETV
 from resources.lib.jwlib.search import Result
 from resources.lib.jwlib.search.const import TYPE_AUDIO, TYPE_VIDEO, TYPE_VIDEO_CAT
 from resources.lib.kodi import ItemType
@@ -28,6 +31,22 @@ def test_create_category_item_hidden(session):
     item = jwgui.create_category_item(cat)
 
     assert item.url == BrowseRequest(category='A', hidden=True, media=False).url
+
+
+@pytest.mark.parametrize('cat_type, expected', [(CATEGORY_ONDEMAND, True), (CATEGORY_CONTAINER, False)])
+def test_has_media(session, cat_type, expected):
+    cat = Category.create(key='A', name='Category A', session=session, type=cat_type)
+
+    assert jwgui.has_media(cat) is expected
+
+
+@pytest.mark.parametrize('cat_type, expected_media', [(CATEGORY_ONDEMAND, True), (CATEGORY_CONTAINER, False)])
+def test_create_category_item_sets_media_from_category_type(session, cat_type, expected_media):
+    cat = Category.create(key='A', name='Category A', session=session, type=cat_type)
+
+    item = jwgui.create_category_item(cat)
+
+    assert item.url == BrowseRequest(category='A', hidden=False, media=expected_media).url
 
 
 def test_create_media_item_video(session):
