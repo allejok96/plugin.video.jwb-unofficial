@@ -135,6 +135,10 @@ msgctxt "#30301"
 msgid "Not available in selected language"
 msgstr ""
 
+msgctxt "#30302"
+msgid "Failed to update settings, see the log for details."
+msgstr ""
+
 
 # 31x Disclaimer dialog
 

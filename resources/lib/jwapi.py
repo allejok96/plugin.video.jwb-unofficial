@@ -1,13 +1,14 @@
 """
 Common functions to request and process jwlib data
 """
-
+import logging
 from typing import Optional, Union, List, Tuple
 
 import resources.lib.jwlib.media as jwlib
 from resources.lib.jwlib.media import BaseSession, Category, Media, File, NotFoundError
-from resources.lib.jwlib.media.const import CLIENT_APPLETV, CLIENT_NONE, TAG_EXCLUDE_APPLETV, CATEGORY_ONDEMAND
+from resources.lib.jwlib.media.const import CLIENT_APPLETV, CLIENT_NONE, TAG_EXCLUDE_APPLETV
 
+from resources.lib.kodi import kodi, LogLevel
 from resources.lib.settings import settings, SubtitleMode
 
 __all__ = (
@@ -18,6 +19,8 @@ __all__ = (
     'is_hidden',
     'is_convention_release_root',
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_session(lang: str = '', *, hidden: bool) -> BaseSession:
@@ -77,7 +80,7 @@ def get_media(key: str, *, languages: List[str], hidden: bool) -> Media:
         try:
             return get_session(hidden=hidden, lang=lang).get_media(key)
         except NotFoundError:
-            continue
+            logger.debug(f'Media not found: {lang}/{key}')
     raise NotFoundError
 
 
@@ -85,7 +88,6 @@ def get_best_url(m: Media) -> str:
     """Return the most suitable URL from a Media object"""
 
     return sorted(m.files, key=_rank_file, reverse=True)[0].url
-
 
 
 def is_hidden(item: Union[Category, Media]) -> bool:
@@ -117,7 +119,7 @@ def get_category_multilanguage(category: str, languages: List[str], hidden: bool
         try:
             result.append(get_session(lang=lang, hidden=hidden).get_category(category, include_media=include_media))
         except NotFoundError:
-            continue
+            logger.debug(f'Category not found: {lang}/{category}')
 
     if not result:
         raise NotFoundError(f"Category {category} not found in languages {languages}")

@@ -1,7 +1,8 @@
+import logging
+
 from resources.lib.endpoints import home
 from resources.lib.jwlib.media import Category
 from resources.lib.jwlib.media.const import ROOT_CATEGORY, TAG_EXCLUDE_APPLETV
-from resources.lib.kodi import LogLevel
 from resources.lib.settings import settings
 
 
@@ -54,11 +55,13 @@ def test_set_addon_lang_from_system_lang(languages):
     assert settings.language == 'Z'
 
 
-def test_set_addon_lang_from_system_lang_no_match(kodi, languages):
-    home.set_addon_lang_from_system_lang('xx', languages)
+def test_set_addon_lang_from_system_lang_no_match(kodi, languages, caplog):
+    with caplog.at_level(logging.DEBUG):
+        home.set_addon_lang_from_system_lang('xx', languages)
 
     assert settings.language == 'E'
-    assert (LogLevel.INFO, 'failed to automatically configure language') in kodi.logged_messages
+    assert ('resources.lib.endpoints.home', logging.ERROR, "Failed to auto configure language to 'xx'") \
+           in caplog.record_tuples
 
 
 def test_get_fanart_path():

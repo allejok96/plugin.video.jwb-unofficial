@@ -1,27 +1,26 @@
-from typing import List, Callable
+import logging
+from typing import List, Callable, Tuple
 
 from resources.lib.jwapi import get_session
-from resources.lib.kodi import kodi
+from resources.lib.kodi import kodi, LogLevel
 from resources.lib.settings import settings, SubtitleMode
 
 __all__ = (
     'migrate_settings',
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _upgrade_video_res() -> None:
-    # Old video resolution used an enum and the order was backwards
-    RES_ENUM = {0: 1080, 1: 720, 2: 480, 3: 360, 4: 240}
     old_res = int(kodi().get_setting('video_res'))
+    logger.info(f"Old value: {old_res}")
 
-    if old_res == 0:  # default
-        return
+    # Old video resolution used an enum and the order was backwards
+    new_res = {0: 1080, 1: 720, 2: 480, 3: 360, 4: 240}[old_res]
+    logger.info(f"New value: {new_res}")
 
-    try:
-        kodi().log("Migrating legacy video resolution setting")
-        settings.resolution = RES_ENUM[old_res]
-    except Exception:
-        kodi().log("Failed to migrate video resolution setting")
+    settings.resolution = new_res
 
 
 def _get_name_of_language(code: str) -> str:
@@ -35,27 +34,30 @@ def _upgrade_remember_lang() -> None:
     # Activating this meant that the temp language never got cleared,
     # thus it would act like "Play in another language" was used every time.
     # (Playing in another language's audio with native subtitles).
-
-    if not kodi().get_setting_bool('remember_lang'):  # default
-        return
-
+    old_remember_lang = kodi().get_setting_bool('remember_lang')
     tmp_lang = settings.tmp_language
+
+    logger.info(f'Old value: {old_remember_lang}')
+    logger.info(f'Last language: {tmp_lang!r}')
 
     # If the user had this setting active and wanted to play a video in their native language
     # they would select that in the list of "Play in another language".
     # In that case it would be the same as if the setting was off.
-    if tmp_lang == settings.language:
-        return
+    if old_remember_lang and tmp_lang and tmp_lang != settings.language:
+        logger.info(f'Enabling original audio language: {tmp_lang}')
 
-    kodi().log('Migrating legacy "Always use last selected language" setting')
+        try:
+            label = _get_name_of_language(tmp_lang)
+        except Exception:
+            logger.debug(f'Failed to get full name of language {tmp_lang!r}')
+            label = tmp_lang
 
-    try:
-        label = _get_name_of_language(tmp_lang)
-    except Exception:
-        label = tmp_lang
+        settings.original_audio = True
+        settings.set_second_language(tmp_lang, label)
 
-    settings.set_second_language(tmp_lang, label)
-    settings.original_audio = True
+    else:
+        logger.info(f'Disabling original audio language')
+        settings.original_audio = False
 
 
 def _upgrade_subtitles() -> None:
@@ -63,20 +65,24 @@ def _upgrade_subtitles() -> None:
     # This would enable subtitles for the native language
     # (When playing in another language, subtitles was always on by default)
 
-    if not kodi().get_setting_bool('subtitles'):  # default
-        return
+    old_subtitles = kodi().get_setting_bool('subtitles')
+    logger.info(f'Old value: {old_subtitles}')
 
-    kodi().log("Migrating legacy subtitle setting")
-    settings.subtitle_mode = SubtitleMode.ON
+    if old_subtitles:
+        logger.info(f'Enabling subtitles for all languages')
+        settings.subtitle_mode = SubtitleMode.ON
+    else:
+        logger.info(f'Enabling subtitles for original language and foreign languages')
+        settings.subtitle_mode = SubtitleMode.ORIG_AND_FOREIGN
 
 
 # Order to run upgrade routines
 # Length of this list affects settings version
 # Do NOT remove or reorder items, only append
-_upgrade_routines: List[Callable[[], None]] = [
-    _upgrade_video_res,
-    _upgrade_remember_lang,
-    _upgrade_subtitles,
+_upgrade_routines: List[Tuple[Callable[[], None], str]] = [
+    (_upgrade_video_res, 'video resolution'),
+    (_upgrade_remember_lang, '"Always use last selected language"'),
+    (_upgrade_subtitles, 'subtitle'),
 ]
 
 
@@ -88,13 +94,32 @@ def _set_last_version(val: int) -> None:
     kodi().set_setting('last_settings_version', str(val))
 
 
-def migrate_settings() -> None:
-    last_upgrade_routine_count = _get_last_version()
+def migrate_settings() -> bool:
+    """Migrate settings and return success"""
+
+    try:
+        last_upgrade_routine_count = _get_last_version()
+    except Exception as e:
+        logger.info('Failed to read settings version', exc_info=e)
+        _set_last_version(len(_upgrade_routines))
+        return False
 
     if last_upgrade_routine_count >= len(_upgrade_routines):
-        return
+        return True
 
+    logger.info(f'Starting settings migration from version {last_upgrade_routine_count} to {len(_upgrade_routines)}')
+
+    success = True
     for i in range(last_upgrade_routine_count, len(_upgrade_routines)):
-        _upgrade_routines[i]()
+        routine, description = _upgrade_routines[i]
+        logger.info(f'Migrating {description} setting')
+        try:
+            routine()
+        except Exception as e:
+            logger.info(f'Failed to migrate {description} setting', exc_info=e)
+            success = False
 
     _set_last_version(len(_upgrade_routines))
+    logger.info(f'Settings migration finished')
+
+    return success

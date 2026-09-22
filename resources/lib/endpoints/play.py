@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import List, Dict, Set
 
@@ -13,6 +14,8 @@ from resources.lib.settings import settings, SubtitleMode
 __all__ = (
     'play_endpoint',
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MultiLanguageMediaCache:
@@ -36,6 +39,7 @@ class MultiLanguageMediaCache:
                 self.found[language] = media
                 return media
             except NotFoundError:
+                logger.debug(f'Media not found: {language}/{self.key}')
                 self.failed.add(language)
 
         raise NotFoundError
@@ -87,9 +91,12 @@ def set_subtitle_visibility(visible: bool):
 def get_subtitles(cached: MultiLanguageMediaCache) -> List[str]:
     try:
         subtitle = cached.get([settings.language]).subtitle_url
-        return [subtitle] if subtitle else []
+        if subtitle:
+            return [subtitle]
+        logger.debug(f'No subtitles found for media {cached.key!r}')
     except NotFoundError:
-        return []
+        logger.debug(f'No subtitles found for language {settings.language!r}')
+    return []
 
 
 def play_media(media_id: str, request_lang: str, hidden: bool):
@@ -105,7 +112,7 @@ def play_media(media_id: str, request_lang: str, hidden: bool):
 
     list_item = create_media_item(title_item)
     list_item.url = get_best_url(playback_item)
-    list_item.subtitles = get_subtitles(cached) # TODO need to append subtitles for video's native language?
+    list_item.subtitles = get_subtitles(cached)  # TODO need to append subtitles for video's native language?
 
     # Start playing
     kodi().set_resolved_url(list_item)

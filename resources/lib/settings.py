@@ -1,24 +1,28 @@
 """
 Wrapper for settings.xml
 """
-
+import logging
 from enum import Enum
 from typing import List
 
 import resources.lib.jwlib.media as jwlib
-from resources.lib.kodi import kodi
+from resources.lib.kodi import kodi, LogLevel
 
 __all__ = (
     'SubtitleMode',
     'settings',
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _try_request_translations(lang: str) -> dict:
     try:
         return jwlib.get_session(lang).get_translations()
     except Exception:
+        logger.debug('Failed to fetch translations')
         return {}
+
 
 def _set_search_translation(strings: dict):
     """Get translation of the word "search" from jw.org - overkill but so cool"""
@@ -26,7 +30,7 @@ def _set_search_translation(strings: dict):
     string = strings.get('hdgSearch')
 
     if not string:
-        kodi().log('failed to fetch translation of search label')
+        logger.debug('Failed to find translation of search label')
 
     kodi().set_setting('search_tr', string or 'Search')
 

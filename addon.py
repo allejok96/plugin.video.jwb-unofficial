@@ -13,18 +13,11 @@ from resources.lib.translations import *
 def main() -> None:
     configure_logging()
 
-    try:
-        migrate_settings()
-    except Exception:
-        notify_and_log_traceback("Failed to perform settings migration")
+    if not migrate_settings():
+        kodi().notify(tr(Settings_migration_error))
 
     args = kodi().get_addon_args()
     mode = args.get('mode', '')
-
-    # hidden= is a required argument on some requests, but it is filtered out if false,
-    # so we just lazily add it back to avoid Pydantic errors (superfluos arguments will
-    # be ignored anyway).
-    args.setdefault('hidden', '0')
 
     try:
         if mode == BrowseRequest.mode:

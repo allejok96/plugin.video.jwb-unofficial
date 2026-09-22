@@ -39,4 +39,5 @@ def configure_logging():
 
 def notify_and_log_traceback(message: str):
     kodi().notify(message)
+    kodi().log(message, LogLevel.ERROR)
     kodi().log(traceback.format_exc(), LogLevel.ERROR)

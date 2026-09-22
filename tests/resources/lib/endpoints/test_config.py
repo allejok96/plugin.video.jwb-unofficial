@@ -1,8 +1,9 @@
+import logging
+
 import pytest
 
 import resources.lib.settings
 from resources.lib.endpoints import config_endpoint
-from resources.lib.kodi import LogLevel
 from resources.lib.requests import ConfigRequest
 from resources.lib.settings import settings
 
@@ -17,17 +18,18 @@ def test_config_endpoint_sets_lang1(kodi, sessions):
     assert settings.search_label == 'Sök'
 
 
-def test_config_endpoint_sets_lang1_falls_back_when_translation_fetch_fails(kodi, sessions):
+def test_config_endpoint_sets_lang1_falls_back_when_translation_fetch_fails(kodi, sessions, caplog):
     sv = sessions.add('Z')
 
     with pytest.raises(NotImplementedError):
         sv.get_translations()
 
-    config_endpoint(ConfigRequest(lang1='Z', label='TEST NAME 1'))
+    with caplog.at_level(logging.DEBUG):
+        config_endpoint(ConfigRequest(lang1='Z', label='TEST NAME 1'))
 
     assert settings.language == 'Z'
     assert settings.search_label == 'Search'
-    assert (LogLevel.INFO, 'failed to fetch translation of search label') in kodi.logged_messages
+    assert ('resources.lib.settings', logging.DEBUG, 'Failed to find translation of search label') in caplog.record_tuples
 
 
 def test_config_endpoint_sets_lang2(kodi):

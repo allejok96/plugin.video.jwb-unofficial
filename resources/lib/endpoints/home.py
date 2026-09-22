@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List
 
@@ -14,6 +15,7 @@ __all__ = (
     'home_endpoint',
 )
 
+logger = logging.getLogger(__name__)
 
 def first_time_setup():
     if settings.first_run:
@@ -26,6 +28,7 @@ def try_get_jw_languages() -> List[Language]:
     try:
         return get_session(hidden=False).get_languages()
     except Exception:
+        logger.debug('Failed to fetch language list')
         return []
 
 
@@ -34,7 +37,7 @@ def set_addon_lang_from_system_lang(iso_lang: str, jw_languages: List[Language])
     try:
         language = next(lang for lang in jw_languages if lang.iso == iso_lang)
     except StopIteration:
-        kodi().log('failed to automatically configure language')
+        logger.error(f'Failed to auto configure language to {iso_lang!r}')
         return
 
     settings.set_language(language.code, f'{language.name} / {language.vernacular}')

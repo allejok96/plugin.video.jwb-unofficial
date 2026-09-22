@@ -118,7 +118,7 @@ def test_main_handles_not_found_error(kodi, monkeypatch):
     addon.main()
 
     assert kodi.notifications == ['STRING #30301']
-    assert logged == [LogLevel.ERROR]
+    assert logged == [LogLevel.ERROR, LogLevel.ERROR]
 
 
 def test_main_handles_os_error(kodi, monkeypatch):
@@ -130,4 +130,4 @@ def test_main_handles_os_error(kodi, monkeypatch):
     addon.main()
 
     assert kodi.notifications == ['STRING #30300']
-    assert logged == [LogLevel.ERROR]
+    assert logged == [LogLevel.ERROR, LogLevel.ERROR]

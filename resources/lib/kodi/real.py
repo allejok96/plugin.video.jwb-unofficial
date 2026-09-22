@@ -107,6 +107,7 @@ class RealKodiInterface(KodiInterface):
         return xbmcaddon.Addon().getSetting(key)
 
     def set_setting(self, key: str, value: str) -> None:
+        self.log(f'Set setting {key!r} to {value!r}', LogLevel.DEBUG)
         xbmcaddon.Addon().setSetting(key, value)
 
     #
@@ -140,7 +141,6 @@ class RealKodiInterface(KodiInterface):
     #
 
     def notify(self, message: str) -> None:
-        self.log(f'notification: {message}', LogLevel.ERROR)
         xbmcgui.Dialog().notification(self.get_addon_name(), message, icon=xbmcgui.NOTIFICATION_ERROR)
 
     def input_dialog(self) -> str:
