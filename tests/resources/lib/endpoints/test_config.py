@@ -28,7 +28,17 @@ def test_config_endpoint_sets_lang1_falls_back_when_translation_fetch_fails(kodi
 
     assert settings.language == 'Z'
     assert settings.search_label == 'Search'
-    assert ('resources.lib.settings', logging.DEBUG, 'Failed to find translation of search label') in caplog.record_tuples
+    assert ('resources.lib.settings', logging.DEBUG, 'Failed to fetch translated strings') in caplog.record_tuples
+
+
+def test_config_endpoint_sets_lang1_falls_back_when_search_translation_missing(kodi, sessions, caplog):
+    sessions.add('Z').translations = {'somethingElse': 'Något annat'}
+
+    with caplog.at_level(logging.DEBUG):
+        config_endpoint(ConfigRequest(lang1='Z', label='TEST NAME 1'))
+
+    assert settings.search_label == 'Search'
+    assert ('resources.lib.settings', logging.DEBUG, 'Failed to find translation of "Search"') in caplog.record_tuples
 
 
 def test_config_endpoint_sets_lang2(kodi):

@@ -173,7 +173,7 @@ class TestMigrateSettings:
         assert calls == [1]  # later routines still run
         assert kodi.get_setting('last_settings_version') == '2'
         assert result is False
-        assert ('resources.lib.compat', logging.INFO, 'Failed to migrate boom setting') in caplog.record_tuples
+        assert ('resources.lib.compat', logging.INFO, 'boom - failed') in caplog.record_tuples
 
     def test_failure_to_read_version_is_treated_as_a_failed_migration(self, kodi, monkeypatch, caplog):
         monkeypatch.setattr(compat, '_get_last_version', lambda: (_ for _ in ()).throw(ValueError))
