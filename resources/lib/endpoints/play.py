@@ -108,15 +108,17 @@ def _play_media(media_id: str, request_lang: str, hidden: bool):
 
     list_item = create_media_item(title_item)
     list_item.url = get_best_url(playback_item)
-    list_item.subtitles = _get_subtitles(cached)  # TODO need to append subtitles for video's native language?
+    list_item.subtitles = _get_subtitles(cached)
 
     # Start playing
     kodi().set_resolved_url(list_item)
 
-    if list_item.subtitles:
-        playback_language = playback_item.session.language
-        want_subtitles = _get_subtitle_visibility(playback_language)
-        _set_subtitle_visibility(want_subtitles)
+    # TODO this breaks for playlists...
+
+    # Files may have subtitles baked in, so always set the visibility, even if the list item has no subtitles
+    playback_language = playback_item.session.language
+    want_subtitles = _get_subtitle_visibility(playback_language)
+    _set_subtitle_visibility(want_subtitles)
 
 
 def play_endpoint(request: PlayRequest):
