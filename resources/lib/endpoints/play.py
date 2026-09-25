@@ -80,8 +80,9 @@ def _wait_for_playback_to_start(url: str) -> bool:
             if kodi().get_playing_file() == url:
                 return True
         except Exception:
-            logger.debug('Waiting for playback to start...')
-            time.sleep(1)
+            pass
+        logger.debug('Waiting for playback to start...')
+        time.sleep(1)
     return False
 
 
