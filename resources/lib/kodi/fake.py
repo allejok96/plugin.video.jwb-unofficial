@@ -98,8 +98,8 @@ class FakeKodiInterface(KodiInterface):
     # GUI elements
     #
 
-    def notify(self, message: str) -> None:
-        self.notifications.append(message)
+    def notify(self, heading: str, message: str) -> None:
+        self.notifications.append(f'{heading}: {message}')
 
     def input_dialog(self) -> str:
         return self.user_string

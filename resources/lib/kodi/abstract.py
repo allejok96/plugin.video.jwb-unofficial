@@ -130,7 +130,7 @@ class KodiInterface(ABC):
     #
 
     @abstractmethod
-    def notify(self, message: str) -> None:
+    def notify(self, heading: str, message: str) -> None:
         ...
 
     @abstractmethod

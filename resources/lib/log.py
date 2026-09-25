@@ -32,7 +32,7 @@ def configure_logging():
     logging.basicConfig(handlers=[_KodiLogForwarder()], level=logging.DEBUG)
 
 
-def notify_and_log_traceback(message: str):
-    kodi().notify(message)
+def notify_and_log_traceback(heading: str, message: str):
+    kodi().notify(heading, message)
     kodi().log(message, LogLevel.ERROR)
     kodi().log(traceback.format_exc(), LogLevel.ERROR)

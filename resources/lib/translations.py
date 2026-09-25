@@ -6,6 +6,7 @@ from resources.lib.kodi import kodi as _kodi
 Connection_error = 30300
 Not_available_in_selected_language = 30301
 Settings_migration_error = 30302
+See_the_log = 30303
 Theocratic_warning = 30310
 Full_disclaimer = 30311
 Hidden_item = 30320

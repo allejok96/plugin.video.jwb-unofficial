@@ -44,7 +44,7 @@ msgid "Display subtitles for"
 msgstr ""
 
 msgctxt "#30011"
-msgid "What languages that will have subtitles on by default"
+msgid "Languages that will have subtitles by default"
 msgstr ""
 
 msgctxt "#30012"
@@ -87,7 +87,7 @@ msgid "Original audio"
 msgstr ""
 
 msgctxt "#30035"
-msgid "Show videos in original language with optional subtitles in main language"
+msgid "Show videos in original language with subtitles in main language"
 msgstr ""
 
 msgctxt "#30036"
@@ -136,7 +136,11 @@ msgid "Not available in selected language"
 msgstr ""
 
 msgctxt "#30302"
-msgid "Failed to update settings, see the log for details."
+msgid "Failed to migrate JWB settings"
+msgstr ""
+
+msgctxt "#30303"
+msgid "See the log for more information."
 msgstr ""
 
 

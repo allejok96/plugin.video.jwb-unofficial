@@ -140,8 +140,8 @@ class RealKodiInterface(KodiInterface):
     # GUI elements
     #
 
-    def notify(self, message: str) -> None:
-        xbmcgui.Dialog().notification(self.get_addon_name(), message, icon=xbmcgui.NOTIFICATION_ERROR)
+    def notify(self, heading: str, message: str) -> None:
+        xbmcgui.Dialog().notification(heading, message, icon=xbmcgui.NOTIFICATION_ERROR)
 
     def input_dialog(self) -> str:
         kb = xbmc.Keyboard()
