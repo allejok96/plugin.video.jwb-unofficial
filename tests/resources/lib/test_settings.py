@@ -1,4 +1,4 @@
-from resources.lib.settings import settings, SubtitleMode
+from resources.lib.settings import settings, SubtitleMode, append_to_language_history
 
 
 def test_fallback_language():
@@ -57,7 +57,6 @@ def test_set_language(kodi, sessions):
     assert settings.language == 'Z'
     assert kodi.get_setting('lang_name') == 'Swedish'
     assert settings.search_label == 'Sök'
-    assert settings.language_history == ['Z']
 
 
 def test_set_second_language(kodi):
@@ -66,27 +65,25 @@ def test_set_second_language(kodi):
 
     assert settings.second_language == 'D'
     assert kodi.get_setting('second_language_name') == 'German'
-    assert settings.language_history == ['D']
 
 
 def test_tmp_language(kodi):
     assert settings.tmp_language == ''  # default
     settings.tmp_language = 'Z'
     assert settings.tmp_language == 'Z'
-    assert settings.language_history == ['Z']
 
 
 def test_language_history_deduplicates_and_moves_to_front():
-    settings.tmp_language = 'A'
-    settings.tmp_language = 'B'
-    settings.tmp_language = 'C'
-    settings.tmp_language = 'A'  # re-selecting A should move it back to front, not duplicate
+    append_to_language_history('A')
+    append_to_language_history('B')
+    append_to_language_history('C')
+    append_to_language_history('A')  # re-selecting A should move it back to front, not duplicate
 
     assert settings.language_history == ['A', 'C', 'B']
 
 
 def test_language_history_caps_at_five():
     for code in ['A', 'B', 'C', 'D', 'E', 'F']:
-        settings.tmp_language = code
+        append_to_language_history(code)
 
     assert settings.language_history == ['F', 'E', 'D', 'C', 'B']

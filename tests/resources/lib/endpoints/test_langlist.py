@@ -3,6 +3,7 @@ import pytest
 from resources.lib.endpoints import langlist
 from resources.lib.jwlib.media import Media, Language
 from resources.lib.requests import ConfigRequest, LanguageRequest, PlayRequest, ShuffleRequest
+from resources.lib.settings import Settings, settings
 
 
 @pytest.fixture
@@ -77,6 +78,7 @@ def test_langlist_endpoint_selects_action(kodi, session):
     langlist.langlist_endpoint(request)
 
     assert kodi.executed_commands == ['RunPlugin(' + ConfigRequest(lang1='D', label='German / Deutsch').url + ')']
+    assert settings.language_history == ['D']
 
 
 def test_langlist_endpoint_cancelled(kodi, session):
@@ -88,6 +90,7 @@ def test_langlist_endpoint_cancelled(kodi, session):
     langlist.langlist_endpoint(request)
 
     assert kodi.executed_commands == []
+    assert settings.language_history == []
 
 
 def test_langlist_endpoint_filters_by_media_languages(kodi, session):

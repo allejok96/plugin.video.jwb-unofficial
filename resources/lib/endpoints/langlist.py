@@ -6,7 +6,7 @@ from resources.lib.jwapi import get_media, get_session
 from resources.lib.jwlib.media import Language
 from resources.lib.kodi import kodi
 from resources.lib.requests import LanguageRequest, ConfigRequest, PlayRequest, ShuffleRequest
-from resources.lib.settings import settings
+from resources.lib.settings import settings, append_to_language_history
 
 
 def _filter_languages(languages: Iterable[Language], filter_codes: Iterable[str]) -> List[Language]:
@@ -67,5 +67,7 @@ def langlist_endpoint(request: LanguageRequest) -> None:
     actions = _build_actions(request, sorted_langs)
 
     selection = kodi().selection_dialog('', [action.label for action in actions])
+
     if selection >= 0:
+        append_to_language_history(sorted_langs[selection].code)
         kodi().execute(actions[selection].command)

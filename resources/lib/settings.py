@@ -12,6 +12,12 @@ from resources.lib.kodi import kodi
 logger = logging.getLogger(__name__)
 
 
+def append_to_language_history(code):
+    if code:
+        history = [code] + [h for h in settings.language_history if h != code]
+        settings.language_history = history[0:5]
+
+
 def _get_search_translation(lang: str) -> str:
     try:
         return jwlib.get_session(lang).get_translations()['hdgSearch']
@@ -64,10 +70,9 @@ class Settings:
     def language_history(self) -> List[str]:
         return kodi().get_setting('lang_history').split()
 
-    def _append_to_language_history(self, code):
-        if code:
-            history = [code] + [h for h in self.language_history if h != code]
-            kodi().set_setting('lang_history', ' '.join(history[0:5]))
+    @language_history.setter
+    def language_history(self, history: List[str]):
+        kodi().set_setting('lang_history', ' '.join(history))
 
     @property
     def original_audio(self) -> bool:
@@ -112,7 +117,6 @@ class Settings:
     @tmp_language.setter
     def tmp_language(self, value: str):
         kodi().set_setting('lang_next', value)
-        self._append_to_language_history(value)
 
     @property
     def token(self) -> str:
@@ -127,13 +131,11 @@ class Settings:
     def set_language(self, code: str, name: str):
         kodi().set_setting('language', code)
         kodi().set_setting('lang_name', name)
-        self._append_to_language_history(code)
         update_search_translation(code)
 
     def set_second_language(self, code: str, name: str):
         kodi().set_setting('second_language', code)
         kodi().set_setting('second_language_name', name)
-        self._append_to_language_history(code)
 
 
 settings = Settings()
