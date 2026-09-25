@@ -128,5 +128,9 @@ def play_endpoint(request: PlayRequest):
         settings.tmp_language = request.lang
         kodi().execute('PlayMedia(' + PlayRequest(media=request.media, hidden=False).url + ', resume)')
     else:
-        _play_media(request.media, request.lang or settings.tmp_language, hidden=request.hidden)
-        settings.tmp_language = ''
+        if settings.tmp_language:
+            language = settings.tmp_language
+            settings.tmp_language = ''
+        else:
+            language = request.lang
+        _play_media(request.media, language, hidden=request.hidden)
