@@ -64,7 +64,7 @@ def home_endpoint():
     items = [create_category_item(c, fanart=fanart) for c in cats]
 
     items.append(ListItem(
-        title=settings.search_label,
+        title=settings.search_label or 'Search',
         fanart=fanart,
         icon='DefaultMusicSearch.png',
         type=ItemType.FOLDER,

@@ -35,7 +35,7 @@ class _MultiLangMediaCache:
                 self.found[language] = media
                 return media
             except NotFoundError:
-                logger.debug(f'Media not found: {language}/{self.key}')
+                logger.debug(f'No media found for language {language!r}')
                 self.failed.add(language)
 
         raise NotFoundError

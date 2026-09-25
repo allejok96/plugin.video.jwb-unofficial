@@ -157,7 +157,7 @@
                     <control type="edit" format="string"/>
                 </setting>
 
-                <!-- Cached translation of the Search button, will be updated if/when empty -->
+                <!-- Cached translation of the Search button -->
                 <setting id="search_tr" type="string">
                     <visible>false</visible>
                     <default>Search</default>

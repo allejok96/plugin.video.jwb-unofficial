@@ -3,7 +3,7 @@ Implementation of Kodi interface
 
 This is the only place the xbmc modules should be imported.
 """
-
+import logging
 import sys
 from typing import List, Union, Sequence
 
@@ -14,6 +14,8 @@ import xbmcplugin
 import xbmcvfs
 
 from resources.lib.kodi import ItemType, KodiInterface, ListItem, LogLevel
+
+logger = logging.getLogger(__name__)
 
 
 def content_type_of_list(items: Sequence[ListItem]) -> str:
@@ -107,7 +109,7 @@ class RealKodiInterface(KodiInterface):
         return xbmcaddon.Addon().getSetting(key)
 
     def set_setting(self, key: str, value: str) -> None:
-        self.log(f'Set setting {key!r} to {value!r}', LogLevel.DEBUG)
+        logger.debug(f'Setting {key!r} => {value!r}')
         xbmcaddon.Addon().setSetting(key, value)
 
     #

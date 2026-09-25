@@ -17,23 +17,20 @@ __all__ = (
 logger = logging.getLogger(__name__)
 
 
-def _try_request_translations(lang: str) -> dict:
+def _get_search_translation(lang: str) -> str:
     try:
-        return jwlib.get_session(lang).get_translations()
+        return jwlib.get_session(lang).get_translations()['hdgSearch']
+    except KeyError:
+        logger.debug('Failed to find translation of "Search"')
     except Exception:
-        logger.debug('Failed to fetch translations')
-        return {}
+        logger.debug('Failed to fetch translated strings')
+    return 'Search'
 
 
-def _set_search_translation(strings: dict):
+def update_search_translation(lang: str):
     """Get translation of the word "search" from jw.org - overkill but so cool"""
 
-    string = strings.get('hdgSearch')
-
-    if not string:
-        logger.debug('Failed to find translation of search label')
-
-    kodi().set_setting('search_tr', string or 'Search')
+    kodi().set_setting('search_tr', _get_search_translation(lang))
 
 
 class SubtitleMode(Enum):
@@ -136,7 +133,7 @@ class Settings:
         kodi().set_setting('language', code)
         kodi().set_setting('lang_name', name)
         self._append_to_language_history(code)
-        _set_search_translation(_try_request_translations(code))
+        update_search_translation(code)
 
     def set_second_language(self, code: str, name: str):
         kodi().set_setting('second_language', code)

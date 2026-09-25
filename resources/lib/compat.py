@@ -3,7 +3,7 @@ from typing import List, Callable, Tuple
 
 from resources.lib.jwapi import get_session
 from resources.lib.kodi import kodi
-from resources.lib.settings import settings, SubtitleMode
+from resources.lib.settings import settings, SubtitleMode, update_search_translation
 
 __all__ = (
     'migrate_settings',
@@ -76,13 +76,19 @@ def _upgrade_subtitles() -> None:
         settings.subtitle_mode = SubtitleMode.ORIG_AND_FOREIGN
 
 
+def _upgrade_empty_search_label() -> None:
+    """The old addon allowed an empty search label, now we don't"""
+    update_search_translation(settings.language)
+
+
 # Order to run upgrade routines
 # Length of this list affects settings version
 # Do NOT remove or reorder items, only append
 _upgrade_routines: List[Tuple[Callable[[], None], str]] = [
-    (_upgrade_video_res, 'video resolution'),
-    (_upgrade_remember_lang, '"Always use last selected language"'),
-    (_upgrade_subtitles, 'subtitle'),
+    (_upgrade_video_res, 'Migrating old video resolution setting'),
+    (_upgrade_remember_lang, 'Migrating "Always use last selected language" setting'),
+    (_upgrade_subtitles, 'Migrating old subtitle setting'),
+    (_upgrade_empty_search_label, 'Updating cached translations'),
 ]
 
 
@@ -107,16 +113,16 @@ def migrate_settings() -> bool:
     if last_upgrade_routine_count >= len(_upgrade_routines):
         return True
 
-    logger.info(f'Starting settings migration from version {last_upgrade_routine_count} to {len(_upgrade_routines)}')
+    logger.info(f'Starting settings migration {last_upgrade_routine_count} => {len(_upgrade_routines)}')
 
     success = True
     for i in range(last_upgrade_routine_count, len(_upgrade_routines)):
         routine, description = _upgrade_routines[i]
-        logger.info(f'Migrating {description} setting')
+        logger.info(description)
         try:
             routine()
         except Exception as e:
-            logger.info(f'Failed to migrate {description} setting', exc_info=e)
+            logger.info(f'{description} - failed', exc_info=e)
             success = False
 
     _set_last_version(len(_upgrade_routines))
