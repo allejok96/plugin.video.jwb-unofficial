@@ -21,7 +21,7 @@ class _KodiLogForwarder(logging.Handler):
 
     def __init__(self):
         super().__init__()
-        self.setFormatter(logging.Formatter('%(name)s: %(message)s'))
+        self.setFormatter(logging.Formatter(f'{kodi().get_addon_id()}.%(name)s: %(message)s'))
 
     def emit(self, record: logging.LogRecord):
         level = self.LEVELS.get(record.levelno, LogLevel.INFO)

@@ -14,13 +14,13 @@ def make_record(level: int, message: str, name: str = 'resources.lib.jwapi') -> 
 def test_emit_forwards_formatted_message_and_level(kodi):
     _KodiLogForwarder().emit(make_record(logging.WARNING, 'something went wrong'))
 
-    assert kodi.logged_messages == [(LogLevel.WARN, 'resources.lib.jwapi: something went wrong')]
+    assert kodi.logged_messages == [(LogLevel.WARN, 'plugin.video.jwb-unofficial.resources.lib.jwapi: something went wrong')]
 
 
 def test_emit_defaults_unknown_level_to_info(kodi):
     _KodiLogForwarder().emit(make_record(15, 'custom level'))
 
-    assert kodi.logged_messages == [(LogLevel.INFO, 'resources.lib.jwapi: custom level')]
+    assert kodi.logged_messages == [(LogLevel.INFO, 'plugin.video.jwb-unofficial.resources.lib.jwapi: custom level')]
 
 
 def test_configure_logging_installs_kodi_handler_at_debug_level(monkeypatch):
