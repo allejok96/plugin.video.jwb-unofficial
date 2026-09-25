@@ -62,18 +62,16 @@ def _create_language_agnostic_media_item(media: Media, requested_lang: str) -> L
     elif media.type == MEDIA_AUDIO:
         return create_media_item_with_url(media, url=get_best_url(media))
 
-    # The last option to avoid redirection is to provide the playlist= argument.
+    # The last option to avoid redirection is to provide the no_redirect= argument.
+    # This breaks language agnostic watch status, though.
     # We must do this for videos to get proper subtitle settings
     # (since this is handled by the addon after setResolvedURL is called)
-    # TODO shouldn't this request include language?
     else:
         return create_media_item(media, language=requested_lang, no_redirect=True)
 
 
 def shuffle_endpoint(request: ShuffleRequest):
     """API endpoint that creates a playlist and starts playing"""
-
-    # TODO shuffle på svenska har svenska undertexter... varför?
 
     cats = get_category_multilanguage(
         category=request.category,
