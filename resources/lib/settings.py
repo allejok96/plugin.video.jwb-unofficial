@@ -9,11 +9,6 @@ import resources.lib.jwlib.media as jwlib
 
 from resources.lib.kodi import kodi
 
-__all__ = (
-    'SubtitleMode',
-    'settings',
-)
-
 logger = logging.getLogger(__name__)
 
 

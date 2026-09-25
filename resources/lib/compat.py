@@ -5,9 +5,6 @@ from resources.lib.jwapi import get_session
 from resources.lib.kodi import kodi
 from resources.lib.settings import settings, SubtitleMode, update_search_translation
 
-__all__ = (
-    'migrate_settings',
-)
 
 logger = logging.getLogger(__name__)
 

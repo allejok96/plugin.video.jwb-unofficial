@@ -10,10 +10,6 @@ from resources.lib.kodi import kodi, ListItem
 from resources.lib.requests import ShuffleRequest
 from resources.lib.settings import settings
 
-__all__ = (
-    'shuffle_endpoint',
-)
-
 
 def _get_all_media(category: Category) -> Iterator[Media]:
     """Iterator of all media items, depth first"""

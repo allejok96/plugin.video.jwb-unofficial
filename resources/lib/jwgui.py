@@ -14,14 +14,6 @@ from resources.lib.jwapi import is_hidden
 from resources.lib.kodi import ListItem, ItemType, kodi
 from resources.lib.translations import *
 
-__all__ = (
-    'create_category_item',
-    'create_media_item',
-    'create_media_item_with_url',
-    'create_search_result',
-    'show_disclaimer',
-)
-
 
 def create_category_item(c: Category, *, fanart=None) -> ListItem:
     """Create a ListItem from a Category and add it to the screen"""
