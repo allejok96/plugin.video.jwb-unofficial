@@ -101,3 +101,44 @@ def get_category_multilanguage(category: str, languages: List[str], hidden: bool
         raise NotFoundError(f"Category {category} not found in languages {languages}")
 
     return result
+
+
+def _merge_category_content(cats: List[Category]) -> Tuple[List[Category], List[Media]]:
+    """Extract unique items from one or more categories (different languages)
+
+    Duplicate items are ignored (language agnostic), only the first occurrence is kept.
+    """
+    seen_cats: List[str] = []
+    seen_media: List[str] = []
+    merged_cats: List[Category] = []
+    merged_media: List[Media] = []
+
+    for cat in cats:
+        for subcat in cat.get_subcategories():
+            if subcat.key not in seen_cats:
+                seen_cats.append(subcat.key)
+                merged_cats.append(subcat)
+        for media in cat.get_media():
+            if media.key not in seen_media:
+                seen_media.append(media.key)
+                merged_media.append(media)
+
+    return merged_cats, merged_media
+
+
+def get_content_multilanguage(
+        category: str,
+        languages: List[str],
+        hidden: bool,
+        include_media: bool) -> Tuple[List[Category], List[Media]]:
+    cats = get_category_multilanguage(
+        category=category,
+        languages=languages,
+        hidden=hidden,
+        include_media=include_media,
+    )
+
+    subcategories, media = _merge_category_content(cats)
+    media.sort(key=lambda m: m.published, reverse=True)
+
+    return subcategories, media

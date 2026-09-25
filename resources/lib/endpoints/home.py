@@ -5,7 +5,7 @@ from typing import List
 from resources.lib.jwlib.media import Category, Language
 from resources.lib.jwlib.media.const import ROOT_CATEGORY
 
-from resources.lib.jwapi import is_hidden, get_category_multilanguage, get_session
+from resources.lib.jwapi import is_hidden, get_content_multilanguage, get_session
 from resources.lib.jwgui import create_category_item, show_disclaimer
 from resources.lib.kodi import kodi, ListItem, ItemType
 from resources.lib.requests import SearchRequest
@@ -42,12 +42,14 @@ def _set_addon_lang_from_system_lang(iso_lang: str, jw_languages: List[Language]
 
 def _get_root_categories() -> List[Category]:
     # To see if there is a convention release page we need to show hidden items
-    # TODO potential bug: if there are top level categories in fallback language but not in default language
-    root = get_category_multilanguage(ROOT_CATEGORY, languages=[settings.language], hidden=True, include_media=False)[0]
+    subcategories, media = get_content_multilanguage(
+        category=ROOT_CATEGORY,
+        languages=[settings.language, settings.fallback_language],
+        hidden=True,
+        include_media=False
+    )
 
-    return [cat
-            for cat in root.get_subcategories()
-            if not is_hidden(cat)]
+    return [sc for sc in subcategories if not is_hidden(sc)]
 
 
 def _get_fanart_path() -> str:

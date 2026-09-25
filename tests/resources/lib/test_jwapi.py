@@ -170,3 +170,56 @@ def test_get_category_multilanguage_deduplicates_languages(session, monkeypatch)
 
     assert cats == [cat]
     assert session.get_category_calls == [('cat', False)]
+
+
+# get_content_multilanguage
+
+def test_get_content_multilanguage_merges_languages(sessions):
+    en = sessions.add('E')
+    sv = sessions.add('Z')
+
+    en.categories['sub1'] = Category.create(key='sub1', name='First subcategory', session=en, type='ondemand')
+    sv.categories['sub1'] = Category.create(key='sub1', name='Duplicate subcategory', session=sv, type='ondemand')
+    sv.categories['sub2'] = Category.create(key='sub2', name='Second subcategory', session=sv, type='ondemand')
+
+    en.categories['parent'] = Category.create(
+        key='parent',
+        session=en,
+        type='container',
+        subcategories=['sub1'],
+        media=[Media.create(key='media1', title='First media', session=en)],
+    )
+    sv.categories['parent'] = Category.create(
+        key='parent',
+        session=sv,
+        type='container',
+        subcategories=['sub2', 'sub1'],
+        media=[
+            Media.create(key='media2', title='Second media', session=sv),
+            Media.create(key='media1', title='Duplicate media', session=sv),
+        ],
+    )
+
+    subcategories, media = jwapi.get_content_multilanguage(
+        'parent', languages=['E', 'Z'], hidden=False, include_media=True)
+
+    assert [c.name for c in subcategories] == ['First subcategory', 'Second subcategory']
+    assert {m.title for m in media} == {'First media', 'Second media'}
+
+
+def test_get_content_multilanguage_sorts_media_by_published(session):
+    session.categories['parent'] = Category.create(
+        key='parent',
+        session=session,
+        type='container',
+        subcategories=[],
+        media=[
+            Media.create(key='m2', title='Middle', session=session, published='2026-01-02T00:00:00'),
+            Media.create(key='m3', title='Newest', session=session, published='2026-01-03T00:00:00'),
+            Media.create(key='m1', title='Oldest', session=session, published='2026-01-01T00:00:00'),
+        ],
+    )
+
+    _, media = jwapi.get_content_multilanguage('parent', languages=['E'], hidden=False, include_media=True)
+
+    assert [m.title for m in media] == ['Newest', 'Middle', 'Oldest']
