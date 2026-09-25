@@ -3,7 +3,7 @@ Mock implementation of Kodi interface, for unit testing
 """
 import xml.etree.ElementTree as ET
 from functools import lru_cache
-from typing import List, Union, Dict, TypeVar, Tuple, Sequence
+from typing import List, Union, Dict, TypeVar, Tuple, Sequence, Optional
 
 from resources.lib.kodi.abstract import KodiInterface, ListItem, LogLevel
 
@@ -32,7 +32,7 @@ class FakeKodiInterface(KodiInterface):
     user_bool: bool
     user_string: str
     user_choice: int
-    currently_playing_subtitles: List[str]
+    currently_playing_file: Optional[str] = None
 
     # Output
     screen_items: List[ListItem]
@@ -92,7 +92,7 @@ class FakeKodiInterface(KodiInterface):
 
     def set_resolved_url(self, item: ListItem):
         self.resolved = item
-        self.currently_playing_subtitles = item.subtitles
+        self.currently_playing_file = item.url
 
     #
     # GUI elements
@@ -130,8 +130,10 @@ class FakeKodiInterface(KodiInterface):
     # Player
     #
 
-    def get_subtitles(self) -> List[str]:
-        return self.currently_playing_subtitles
+    def get_playing_file(self) -> str:
+        if self.currently_playing_file is None:
+            raise Exception('No playing file')
+        return self.currently_playing_file
 
     def show_subtitles(self, show: bool) -> None:
         self.subtitle_visibility = show

@@ -178,14 +178,14 @@ class RealKodiInterface(KodiInterface):
     }
 
     def log(self, message: str, level: LogLevel = LogLevel.INFO) -> None:
-        xbmc.log(f'{self.get_addon_id()}: {message}', self._log_level_translation[level])
+        xbmc.log(message, self._log_level_translation[level])
 
     #
     # Player
     #
 
-    def get_subtitles(self) -> List[str]:
-        return xbmc.Player().getAvailableSubtitleStreams()
+    def get_playing_file(self) -> str:
+        return xbmc.Player().getPlayingFile()
 
     def show_subtitles(self, show: bool) -> None:
         xbmc.Player().showSubtitles(show)

@@ -60,6 +60,7 @@ def test_get_video_playback_language():
     settings.original_audio = True
     assert play._get_playback_language('', is_video=True) == ['SECOND', 'DEFAULT', 'SECOND']
 
+
 def test_get_audio_playback_language():
     settings.set_language('DEFAULT', 'Default')
     settings.set_second_language('SECOND', 'Second')
@@ -135,14 +136,13 @@ def test_get_subtitle_visibility_foreign(kodi):
     assert play._get_subtitle_visibility('F') is True  # a foreign language
 
 
-def test_set_subtitle_visibility(kodi):
-    kodi.currently_playing_subtitles = ['example.vtt']
+def test_wait_for_playback_to_start(kodi):
+    kodi.currently_playing_file = 'file.mp4'
+    assert play._wait_for_playback_to_start('file.mp4') is True
 
-    play._set_subtitle_visibility(True)
-    assert kodi.subtitle_visibility is True
-
-    play._set_subtitle_visibility(False)
-    assert kodi.subtitle_visibility is False
+    # Testing False takes a LOONG time
+    # TODO why doesn't it take a LOONG TIME?
+    assert play._wait_for_playback_to_start('wrong.mp4') is False
 
 
 def test_get_subtitles_found(session):

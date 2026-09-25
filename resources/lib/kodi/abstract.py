@@ -162,8 +162,11 @@ class KodiInterface(ABC):
     # Player
     #
 
+
+
     @abstractmethod
-    def get_subtitles(self) -> List[str]:
+    def get_playing_file(self) -> str:
+        """Raises Exception if no file is playing"""
         ...
 
     @abstractmethod

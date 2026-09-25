@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
 from resources.lib.jwlib.media import NotFoundError, Media
 from resources.lib.jwlib.media.const import MEDIA_VIDEO
@@ -74,14 +74,15 @@ def _get_subtitle_visibility(lang: str):
         return False
 
 
-def _set_subtitle_visibility(visible: bool):
-    # Turn on/off subtitles without changing the global Kodi setting
-    # TODO check if it can be set in ListItem in the future
+def _wait_for_playback_to_start(url: str) -> bool:
     for i in range(20):
-        if kodi().get_subtitles():
-            kodi().show_subtitles(visible)
-            break
-        time.sleep(1)
+        try:
+            if kodi().get_playing_file() == url:
+                return True
+        except Exception:
+            logger.debug('Waiting for playback to start...')
+            time.sleep(1)
+    return False
 
 
 def _get_subtitles(cached: _MultiLangMediaCache) -> List[str]:
@@ -111,14 +112,20 @@ def _play_media(media_id: str, request_lang: str, hidden: bool):
     list_item.subtitles = _get_subtitles(cached)
 
     # Start playing
+    logger.debug(f'Resolving to: {list_item.url!r}')
     kodi().set_resolved_url(list_item)
-
-    # TODO this breaks for playlists...
 
     # Files may have subtitles baked in, so always set the visibility, even if the list item has no subtitles
     playback_language = playback_item.session.language
     want_subtitles = _get_subtitle_visibility(playback_language)
-    _set_subtitle_visibility(want_subtitles)
+    logger.debug(f'Has external subtitles: {bool(list_item.subtitles)}')
+    logger.debug(f'Want subtitles: {want_subtitles}')
+
+    if _wait_for_playback_to_start(list_item.url):
+        logger.debug(f'Setting subtitle visibility => {want_subtitles}')
+        kodi().show_subtitles(want_subtitles)
+    else:
+        logger.warning('Not setting subtitle visibility, because playback never started')
 
 
 def play_endpoint(request: PlayRequest):
