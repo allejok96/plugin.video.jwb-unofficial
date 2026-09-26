@@ -190,5 +190,5 @@ msgid "Audio clips"
 msgstr ""
 
 msgctxt "#30411"
-msgid "Next page >"
+msgid "Page {} >"
 msgstr ""

@@ -26,11 +26,14 @@ def test_create_audio_button(kodi):
     assert item.url == SearchRequest(q='cats', audio=True).url
 
 
-def test_create_next_button(kodi):
-    item = search._create_next_button('https://example.org/next')
+def test_create_next_button(kodi, monkeypatch):
+    monkeypatch.setattr(kodi, 'get_localized_string', lambda _: 'Page {}')
+
+    item = search._create_next_button('https://example.org/next', 2)
 
     assert item.type == ItemType.FOLDER
     assert item.url == SearchRequest(page='https://example.org/next').url
+    assert item.title == 'Page 2'
 
 
 def test_get_result_from_query(kodi, monkeypatch):

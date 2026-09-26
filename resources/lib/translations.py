@@ -15,7 +15,7 @@ Play_in_another_language = 30400
 Shuffle_this_category = 30401
 Shuffle_in_another_language = 30402
 Audio_clips = 30410
-Next_page = 30411
+Page_nr = 30411
 
 
 def tr(id: int) -> str:

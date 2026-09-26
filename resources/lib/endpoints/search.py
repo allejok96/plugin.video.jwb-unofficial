@@ -18,9 +18,9 @@ def _create_audio_button(query: str) -> ListItem:
     )
 
 
-def _create_next_button(next_page_url: str) -> ListItem:
+def _create_next_button(next_page_url: str, next_page_number: int) -> ListItem:
     return ListItem(
-        title=tr(Next_page),
+        title=tr(Page_nr).format(next_page_number),
         url=SearchRequest(page=next_page_url).url,
         type=ItemType.FOLDER
     )
@@ -55,7 +55,7 @@ def _build_screen(page: ResultPage):
         items.append(create_search_result(r))
 
     if page.next is not None:
-        items.append(_create_next_button(page.next.url))
+        items.append(_create_next_button(page.next.url, page.insight.page + 1))
 
     kodi().add_items(items)
 
