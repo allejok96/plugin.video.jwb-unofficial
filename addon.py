@@ -2,7 +2,7 @@
 
 from resources.lib.jwlib.media import NotFoundError
 
-from resources.lib.compat import migrate_settings
+from resources.lib.migrate import migrate_settings
 from resources.lib.endpoints.browse import browse_endpoint
 from resources.lib.endpoints.config import config_endpoint
 from resources.lib.endpoints.home import home_endpoint
