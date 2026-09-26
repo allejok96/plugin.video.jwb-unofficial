@@ -2,7 +2,7 @@ from typing import Optional
 
 from ._media import Media
 from ._api_responses import FileDict, SubtitleDict, MediaDict
-from ._file import File, Subtitle
+from ._file import File, Subtitles
 from ._session_base import BaseSession
 
 
@@ -66,8 +66,8 @@ def create_file(d: FileDict) -> File:
     )
 
 
-def create_subtitles(d: SubtitleDict) -> Subtitle:
-    return Subtitle(
+def create_subtitles(d: SubtitleDict) -> Subtitles:
+    return Subtitles(
         checksum=d.get('checksum'),
         date=d.get('modifiedDatetime', '')[:19],  # YYYY-MM-DDTHH:MM:SS
         url=d['url'],

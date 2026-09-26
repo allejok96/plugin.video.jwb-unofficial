@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from resources.lib.jwlib.media import NotFoundError, Media, File, Subtitle
+from resources.lib.jwlib.media import NotFoundError, Media, File, Subtitles
 from resources.lib.endpoints import play
 from resources.lib.requests import PlayRequest
 from resources.lib.settings import settings, SubtitleMode
@@ -173,7 +173,7 @@ def test_wait_for_playback_to_start_retries_until_playing(kodi, sleeps, monkeypa
 def test_get_subtitles_found(session):
     media = Media.create(
         key='MediaKey', session=session,
-        files=[File.create(url='video.mp4', subtitles=Subtitle.create(url='subs.vtt'))],
+        files=[File.create(url='video.mp4', subtitles=Subtitles.create(url='subs.vtt'))],
     )
     session.media['MediaKey'] = media
 

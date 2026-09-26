@@ -7,6 +7,7 @@ from typing import Optional, Union
 from urllib.parse import urlparse
 
 from . import const
+from ._subtitles import Subtitles
 from .._deprecated import deprecated
 
 
@@ -48,7 +49,7 @@ class File:
     size: int
     """File size in bytes."""
 
-    subtitles: Optional[Subtitle]
+    subtitles: Optional[Subtitles]
     """External soft subtitles"""
 
     subtitled_hard: bool
@@ -71,17 +72,17 @@ class File:
                modified='',
                resolution=0,
                size=0,
-               subtitles: Union[Subtitle, dict, None] = None,
+               subtitles: Union[Subtitles, dict, None] = None,
                subtitled_hard=False,
                url: str,
                width=0,
                ) -> File:
-        if isinstance(subtitles, Subtitle):
-            subtitle_instance = subtitles
+        if isinstance(subtitles, Subtitles):
+            subtitles_instance = subtitles
         elif subtitles is not None:
-            subtitle_instance = Subtitle.create(**subtitles)
+            subtitles_instance = Subtitles.create(**subtitles)
         else:
-            subtitle_instance = None
+            subtitles_instance = None
         return File(
             bitrate=bitrate,
             checksum=checksum,
@@ -92,7 +93,7 @@ class File:
             modified=modified,
             resolution=resolution,
             size=size,
-            subtitles=subtitle_instance,
+            subtitles=subtitles_instance,
             subtitled_hard=subtitled_hard,
             url=url,
             width=width,
@@ -137,35 +138,3 @@ class File:
     @deprecated("Check `File.subtitles` is not None instead.")
     def subtitled_soft(self) -> bool:
         return self.subtitles is not None
-
-
-@dataclass
-class Subtitle:
-    """Information about soft subtitles."""
-
-    url: str
-
-    checksum: Optional[str]
-    """MD5 checksum."""
-
-    date: str
-    """Modification time, as yyyy-mm-ddThh:mm:ss
-
-    See also `get_date()` and `const.TIME_FORMAT <jwlib.media.const>`.
-    """
-
-    @staticmethod
-    def create(*,
-               checksum: Optional[str] = None,
-               date='',
-               url: str,
-               ) -> Subtitle:
-        return Subtitle(
-            checksum=checksum,
-            date=date,
-            url=url,
-        )
-
-    def get_date(self) -> datetime:
-        """Return `Subtitle.date` as a `datetime`."""
-        return datetime.strptime(self.date, const.TIME_FORMAT)

@@ -42,6 +42,7 @@ def _make_search_request(url: str, token: str, retry: bool) -> tuple[dict, str]:
         _jwt_token = token
 
     if not _jwt_token:
+        logger.debug(f'opening: {url}')
         _jwt_token = urlopen(_TOKEN_URL).read().decode('utf-8')
         retry = False
 
@@ -52,6 +53,7 @@ def _make_search_request(url: str, token: str, retry: bool) -> tuple[dict, str]:
         if e.code != 401 or retry is False:
             raise
 
+    _jwt_token = ''
     return _make_search_request(url, token='', retry=False)
 
 

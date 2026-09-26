@@ -20,15 +20,14 @@ from typing import List, Dict
 from . import const
 from ._api_responses import NotFoundError
 from ._category import Category
-from ._file import File, Subtitle
+from ._file import File
 from ._language import Language
 from ._media import Media
 from ._session_base import BaseSession
 from ._session_impl import Session
+from ._subtitles import Subtitles
+from .const import *  # TODO this should not be here, but is kept for backwards compatibility
 from .._deprecated import deprecated as _deprecated
-
-# TODO this should not be here, but is kept for backwards compatibility
-from .const import *
 
 __all__ = (
     'const',
@@ -40,7 +39,7 @@ __all__ = (
     'Media',
     'NotFoundError',
     'Session',
-    'Subtitle',
+    'Subtitles',
 
     'get_session',
     'request_languages',
