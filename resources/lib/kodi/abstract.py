@@ -52,13 +52,9 @@ class KodiInterface(ABC):
         return {k: v[0] for k, v in parse_qs(self.get_addon_query().lstrip('?')).items()}
 
     @final
-    def get_setting_bool(self, key: str) -> bool:
-        """TODO Kodi 20 use xbmcaddon.Addon(id).getSettings().getBool(id)"""
-        return self.get_setting(key) == 'true'
-
-    @final
-    def set_setting_bool(self, key: str, value: bool) -> None:
-        self.set_setting(key, 'true' if value else 'false')
+    def get_major_version(self) -> int:
+        """Major version number"""
+        return int(self.get_build_version().split('.')[0])
 
     #
     # Addon info
@@ -97,7 +93,15 @@ class KodiInterface(ABC):
         ...
 
     @abstractmethod
+    def get_setting_bool(self, key: str) -> bool:
+        ...
+
+    @abstractmethod
     def set_setting(self, key: str, value: str) -> None:
+        ...
+
+    @abstractmethod
+    def set_setting_bool(self, key: str, value: bool) -> None:
         ...
 
     #
@@ -147,6 +151,10 @@ class KodiInterface(ABC):
     #
 
     @abstractmethod
+    def get_build_version(self) -> str:
+        ...
+
+    @abstractmethod
     def get_system_language(self) -> str:
         ...
 
@@ -161,8 +169,6 @@ class KodiInterface(ABC):
     #
     # Player
     #
-
-
 
     @abstractmethod
     def get_playing_file(self) -> str:

@@ -33,6 +33,7 @@ class FakeKodiInterface(KodiInterface):
     user_string: str
     user_choice: int
     currently_playing_file: Optional[str] = None
+    fake_build_version: str = "21.3 (21.3.0) Git:20260916-nogitfound"
 
     # Output
     screen_items: List[ListItem]
@@ -75,9 +76,15 @@ class FakeKodiInterface(KodiInterface):
     def get_setting(self, key: str) -> str:
         return self.settings[key]
 
+    def get_setting_bool(self, key: str) -> bool:
+        return self.get_setting(key) == 'true'
+
     def set_setting(self, key: str, value: str) -> None:
         assert key in self.settings
         self.settings[key] = value
+
+    def set_setting_bool(self, key: str, value: bool) -> None:
+        self.set_setting(key, 'true' if value else 'false')
 
     #
     # Directory plugin
@@ -116,6 +123,9 @@ class FakeKodiInterface(KodiInterface):
     #
     # Internals
     #
+
+    def get_build_version(self) -> str:
+        return self.fake_build_version
 
     def get_system_language(self) -> str:
         return self.system_language

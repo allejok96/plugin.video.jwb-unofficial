@@ -5,7 +5,8 @@ This is the only place the xbmc modules should be imported.
 """
 import logging
 import sys
-from typing import List, Union, Sequence
+from functools import lru_cache
+from typing import Union, Sequence
 
 import xbmc
 import xbmcaddon
@@ -18,7 +19,12 @@ from resources.lib.kodi import ItemType, KodiInterface, ListItem, LogLevel
 logger = logging.getLogger(__name__)
 
 
-def content_type_of_list(items: Sequence[ListItem]) -> str:
+@lru_cache
+def _get_version() -> int:
+    return RealKodiInterface().get_major_version()
+
+
+def _content_type_of_list(items: Sequence[ListItem]) -> str:
     """Determine plugin content type based on items in list"""
     if any(i.type is ItemType.VIDEO for i in items):
         return 'videos'
@@ -29,16 +35,47 @@ def content_type_of_list(items: Sequence[ListItem]) -> str:
         return 'files'
 
 
+def _legacy_set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
+    if source.type is ItemType.AUDIO:
+        li.setInfo('music', {
+            'comment': source.description,
+            'duration': str(source.duration),
+            'title': source.title,
+            'year': source.date[:4],
+        })
+    else:
+        li.setInfo('video', {
+            'duration': str(source.duration),
+            'title': source.title,
+            'plot': source.description,
+            'premiered': source.date[:10],
+        })
+
+
+def _set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
+    if source.type is ItemType.AUDIO:
+        music_tag: xbmc.InfoTagMusic = li.getMusicInfoTag()
+        music_tag.setComment(source.description)
+        music_tag.setDuration(source.duration)
+        music_tag.setTitle(source.title)
+        try:
+            music_tag.setYear(int(source.date[:4]))
+        except (TypeError, ValueError):
+            pass
+    else:
+        video_tag: xbmc.InfoTagVideo = li.getVideoInfoTag()
+        video_tag.setDuration(source.duration)
+        video_tag.setTitle(source.title)
+        video_tag.setPlot(source.description)
+        video_tag.setPremiered(source.date[:10])
+
+
 def kodi_item(item: ListItem) -> xbmcgui.ListItem:
     """Convert adapter ListItem to native ListItem"""
 
     li = xbmcgui.ListItem(item.title)
 
     # All Kodi's setter functions can be kinda slow, so make sure we have a value before calling them
-
-    # TODO Kodi 20: use getVideoInfoTag().setPlot()
-    if item.description:
-        li.setInfo('video', {'plot': item.description})
 
     if item.fanart or item.icon:
         li.setArt({
@@ -57,21 +94,10 @@ def kodi_item(item: ListItem) -> xbmcgui.ListItem:
     if item.type in (ItemType.AUDIO, ItemType.VIDEO):
         li.setProperty('isPlayable', 'true')
 
-    # TODO Kodi 20: use getVideoInfoTag() or getMusicInfoTag()
-    if item.type is ItemType.AUDIO:
-        li.setInfo('music', {
-            'comment': item.description,
-            'duration': str(item.duration),
-            'title': item.title,
-            'year': item.date[:4],
-        })
-    elif item.type is ItemType.VIDEO:
-        li.setInfo('video', {
-            'duration': str(item.duration),
-            'title': item.title,
-            'plot': item.description,
-            'premiered': item.date[:10],
-        })
+    if _get_version() < 20:
+        _legacy_set_info_labels(li, source=item)
+    else:
+        _set_info_labels(li, source=item)
 
     return li
 
@@ -108,9 +134,21 @@ class RealKodiInterface(KodiInterface):
     def get_setting(self, key: str) -> str:
         return xbmcaddon.Addon().getSetting(key)
 
+    def get_setting_bool(self, key: str) -> bool:
+        if _get_version() < 20:
+            return self.get_setting(key) == 'true'
+        else:
+            return xbmcaddon.Addon().getSettingBool(key)
+
     def set_setting(self, key: str, value: str) -> None:
         logger.debug(f'Setting {key!r} => {value!r}')
         xbmcaddon.Addon().setSetting(key, value)
+
+    def set_setting_bool(self, key: str, value: bool) -> None:
+        if _get_version() < 20:
+            self.set_setting(key, 'true' if value else 'false')
+        else:
+            xbmcaddon.Addon().setSettingBool(key, value)
 
     #
     # Directory plugin
@@ -122,7 +160,7 @@ class RealKodiInterface(KodiInterface):
 
     def add_items(self, items: Sequence[ListItem]) -> None:
         # Enables richer list view alternatives if there's media
-        xbmcplugin.setContent(self.handle, content_type_of_list(items))
+        xbmcplugin.setContent(self.handle, _content_type_of_list(items))
 
         xbmcplugin.addDirectoryItems(
             handle=self.handle,
@@ -162,6 +200,9 @@ class RealKodiInterface(KodiInterface):
     #
     # Internals
     #
+
+    def get_build_version(self) -> str:
+        return xbmc.getInfoLabel('System.BuildVersion')
 
     def get_system_language(self) -> str:
         return xbmc.getLanguage(xbmc.ISO_639_1)
