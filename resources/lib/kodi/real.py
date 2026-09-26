@@ -43,13 +43,17 @@ def _legacy_set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
             'title': source.title,
             'year': source.date[:4],
         })
-    else:
+    elif source.type is ItemType.VIDEO:
         li.setInfo('video', {
             'duration': str(source.duration),
             'title': source.title,
             'plot': source.description,
             'premiered': source.date[:10],
         })
+    elif source.type is ItemType.FOLDER:
+        if source.description:
+            # There is no info label for folders, but 'video' seems to work fine
+            li.setInfo('video', {'plot': source.description})
 
 
 def _set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
@@ -62,12 +66,16 @@ def _set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
             music_tag.setYear(int(source.date[:4]))
         except (TypeError, ValueError):
             pass
-    else:
+    elif source.type is ItemType.VIDEO:
         video_tag: xbmc.InfoTagVideo = li.getVideoInfoTag()
         video_tag.setDuration(source.duration)
         video_tag.setTitle(source.title)
         video_tag.setPlot(source.description)
         video_tag.setPremiered(source.date[:10])
+    elif source.type is ItemType.FOLDER:
+        if source.description:
+            video_tag: xbmc.InfoTagVideo = li.getVideoInfoTag()
+            video_tag.setPlot(source.description)
 
 
 def kodi_item(item: ListItem) -> xbmcgui.ListItem:
