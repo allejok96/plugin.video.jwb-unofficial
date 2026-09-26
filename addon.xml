@@ -28,7 +28,7 @@
     <description lang="en">Watch the latest updates, play music or search for videos on jw.org.</description>
     <disclaimer lang="en">This is not an official plugin, please do not contact jw.org for support.</disclaimer>
     <platform>all</platform>
-      <news>v2.0.0 (2026-09-22)
+      <news>v2.0.0 (2026-09-26)
         - New: Shuffle in another language
         - New: Optional fallback language
         - Improved: Original audio with subtitles
