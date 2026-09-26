@@ -33,6 +33,7 @@ class FakeKodiInterface(KodiInterface):
     user_string: str
     user_choice: int
     currently_playing_file: Optional[str] = None
+    fake_addon_version: str = "2.0.0"
     fake_build_version: str = "21.3 (21.3.0) Git:20260916-nogitfound"
 
     # Output
@@ -69,6 +70,9 @@ class FakeKodiInterface(KodiInterface):
 
     def get_addon_query(self) -> str:
         return self.addon_query
+
+    def get_addon_version(self) -> str:
+        return self.fake_addon_version
 
     def get_localized_string(self, id: int) -> str:
         return f'STRING #{id}'

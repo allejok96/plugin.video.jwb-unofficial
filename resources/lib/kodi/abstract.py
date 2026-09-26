@@ -85,6 +85,10 @@ class KodiInterface(ABC):
         ...
 
     @abstractmethod
+    def get_addon_version(self) -> str:
+        ...
+
+    @abstractmethod
     def get_localized_string(self, id: int) -> str:
         ...
 

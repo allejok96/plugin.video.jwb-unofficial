@@ -128,6 +128,9 @@ class RealKodiInterface(KodiInterface):
         # Query like ?mode=play&media=ThisVideo
         return sys.argv[2]
 
+    def get_addon_version(self) -> str:
+        return xbmcaddon.Addon().getAddonInfo('version')
+
     def get_localized_string(self, id: int) -> str:
         return xbmcaddon.Addon().getLocalizedString(id)
 

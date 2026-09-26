@@ -172,6 +172,14 @@
                     <control type="edit" format="integer"/>
                 </setting>
 
+                <!-- Used for What's new popups -->
+                <setting id="last_used_version" type="string">
+                    <visible>false</visible>
+                    <default/>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
                 <!-- Deprecated settings -->
                 <!-- Kept to avoid log warnings and to assert that settings migration works as intended -->
                 <!-- I could write an XML pruning function, but this is easier -->

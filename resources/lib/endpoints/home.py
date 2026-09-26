@@ -8,6 +8,7 @@ from resources.lib.jwlib.media.const import ROOT_CATEGORY
 from resources.lib.jwapi import is_hidden, get_content_multilanguage, get_session
 from resources.lib.jwgui import create_category_item, show_disclaimer
 from resources.lib.kodi import kodi, ListItem, ItemType
+from resources.lib.news import mark_whats_new_as_shown, show_whats_new
 from resources.lib.requests import SearchRequest
 from resources.lib.settings import settings
 
@@ -19,6 +20,7 @@ def _first_time_setup():
         settings.first_run = False
         _set_addon_lang_from_system_lang(kodi().get_system_language(), _try_get_jw_languages())
         show_disclaimer()
+        mark_whats_new_as_shown()
 
 
 def _try_get_jw_languages() -> List[Language]:
@@ -60,6 +62,8 @@ def home_endpoint():
     """API endpoint for the main menu"""
 
     _first_time_setup()
+
+    show_whats_new()
 
     fanart = _get_fanart_path()
     cats = _get_root_categories()

@@ -75,6 +75,14 @@ class Settings:
         kodi().set_setting('lang_history', ' '.join(history))
 
     @property
+    def last_used_version(self) -> str:
+        return kodi().get_setting('last_used_version')
+
+    @last_used_version.setter
+    def last_used_version(self, value: str) -> None:
+        kodi().set_setting('last_used_version', str(value))
+
+    @property
     def original_audio(self) -> bool:
         return kodi().get_setting_bool('original_audio')
 
