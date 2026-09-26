@@ -5,7 +5,6 @@ from resources.lib.jwapi import get_session
 from resources.lib.kodi import kodi
 from resources.lib.settings import settings, SubtitleMode, update_search_translation
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +77,20 @@ def _upgrade_empty_search_label() -> None:
     update_search_translation(settings.language)
 
 
+def _show_news_2_0() -> None:
+    kodi().text_dialog(
+        "New features in version 2.0",
+        """
+- Original audio
+  Enable this setting to watch videos in English with subtitles in your language.
+
+- Fallback language
+  Enable this setting to include videos that are not available in your language yet.
+
+- Shuffle in another language
+  You can find this the context menu of categories.""")
+
+
 # Order to run upgrade routines
 # Length of this list affects settings version
 # Do NOT remove or reorder items, only append
@@ -86,6 +99,7 @@ _upgrade_routines: List[Tuple[Callable[[], None], str]] = [
     (_upgrade_remember_lang, 'Migrating "Always use last selected language" setting'),
     (_upgrade_subtitles, 'Migrating old subtitle setting'),
     (_upgrade_empty_search_label, 'Updating cached translations'),
+    (_show_news_2_0, 'Show notification about 2.0 features'),
 ]
 
 
