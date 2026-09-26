@@ -18,6 +18,7 @@ NEWS = """
 def show_whats_new() -> None:
     if settings.last_used_version < VERSION:
         kodi().text_dialog(f"New features in version {VERSION}", NEWS)
+        mark_whats_new_as_shown()
 
 
 def mark_whats_new_as_shown() -> None:
