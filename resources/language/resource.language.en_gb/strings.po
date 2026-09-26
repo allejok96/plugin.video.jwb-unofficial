@@ -3,88 +3,192 @@
 msgid ""
 msgstr ""
 
+# String IDs 30xxx are reserved for addons
+
+
+# 00x Resolution setting
+
 msgctxt "#30000"
-msgid "Video Resolution"
+msgid "Max resolution"
 msgstr ""
 
 msgctxt "#30001"
-msgid "240p"
+msgid "Maximum video resolution"
 msgstr ""
 
 msgctxt "#30002"
-msgid "360p"
+msgid "240p"
 msgstr ""
 
 msgctxt "#30003"
-msgid "480p"
+msgid "360p"
 msgstr ""
 
 msgctxt "#30004"
-msgid "720p"
+msgid "480p"
 msgstr ""
 
 msgctxt "#30005"
+msgid "720p"
+msgstr ""
+
+msgctxt "#30006"
 msgid "1080p"
 msgstr ""
 
+
+# 01x Subtitle setting
+
 msgctxt "#30010"
-msgid "Language"
+msgid "Display subtitles for"
 msgstr ""
 
 msgctxt "#30011"
-msgid "Set Language ..."
+msgid "When to display subtitles"
 msgstr ""
 
 msgctxt "#30012"
-msgid "Display subtitles by default"
+msgid "None"
 msgstr ""
 
 msgctxt "#30013"
-msgid "-- Hidden item --"
+msgid "All languages"
+msgstr ""
 
 msgctxt "#30014"
-msgid "Have you already attended this year's convention?"
+msgid "Original audio and foreign languages"
 msgstr ""
 
 msgctxt "#30015"
-msgid "Startup warning"
+msgid "Foreign languages"
 msgstr ""
 
-msgctxt "#30016"
-msgid "Theocratic warning"
+
+# 03x Language setting
+
+msgctxt "#30030"
+msgid "Change language..."
 msgstr ""
 
-msgctxt "#30020"
-msgid "This add-on is not supported by, or affiliated with the Watchtower society in any way.\n"
-"Please use the official JW Broadcasting app for your device, if available.\n"
-"Or consider buying a device that supports the JW Broadcasting or JW Library app.\n\n"
-"Since this add-on is homemade, you must choose if you are willing to trust it.\n"
-"- The add-on may not work as intended.\n"
-"- You may not get all the benefits of jw.org.\n"
-"- The spiritual food could in absolute worst case be tampered with.\n\n"
-"Please read the following Watchtower article before you make up your mind:\n"
-"[B]w18 April page 30[/B]\n\n"
-"This message will only be shown once."
-
-msgctxt "#30021"
-msgid "Play in another language"
+msgctxt "#30031"
+msgid "Change main language"
 msgstr ""
 
-msgctxt "#30023"
-msgid "Shuffle this category"
+msgctxt "#30032"
+msgid "Change original language..."
 msgstr ""
 
-msgctxt "#30024"
-msgid "[audio only]"
+msgctxt "#30033"
+msgid "Change original audio / fallback language"
+msgstr ""
 
-msgctxt "#30025"
+msgctxt "#30034"
+msgid "Original audio"
+msgstr ""
+
+msgctxt "#30035"
+msgid "Show videos in original language with subtitles in main language"
+msgstr ""
+
+msgctxt "#30036"
+msgid "Fallback to original language"
+msgstr ""
+
+msgctxt "#30037"
+msgid "Show videos in original language if they are not available in main language (slower browsing)"
+msgstr ""
+
+
+# 05x Misc settings
+
+msgctxt "#30052"
+msgid "Disclaimer"
+msgstr ""
+
+msgctxt "#30053"
+msgid "Read the disclaimer"
+msgstr ""
+
+
+# 20x Setting dialog headers
+
+msgctxt "#30200"
+msgid "General"
+msgstr ""
+
+msgctxt "#30201"
+msgid "Multi-language"
+msgstr ""
+
+msgctxt "#30202"
+msgid "Other"
+msgstr ""
+
+
+# 30x Error messages
+
+msgctxt "#30300"
 msgid "Connection error"
 msgstr ""
 
-msgctxt "#30026"
-msgid "Always use last selected language"
+msgctxt "#30301"
+msgid "Not available in selected language"
 msgstr ""
 
-msgctxt "#30027"
-msgid "Not available in selected language"
+msgctxt "#30302"
+msgid "Failed to migrate JWB settings"
+msgstr ""
+
+msgctxt "#30303"
+msgid "See the log for more information."
+msgstr ""
+
+
+# 31x Disclaimer dialog
+
+msgctxt "#30310"
+msgid "Theocratic warning"
+msgstr ""
+
+msgctxt "#30311"
+msgid "This homemade add-on is not officially supported by the Watchtower society. "
+"Consider getting a device that supports the official JW Broadcasting app.\n\n"
+"Please look up this Watchtower article from April 2018:\n"
+"[B]w18.4 30[/B]\n\n"
+"If you still want to use this add-on, just keep in mind:\n"
+"- You may not get as good an experience as with jw.org and JW Library.\n"
+"- The add-on may break when changes are made to jw.org.\n"
+"- The add-on could be less secure than JW Library.\n\n"
+msgstr ""
+
+
+# 32x Convention question dialog
+
+msgctxt "#30320"
+msgid "Have you already attended this year's convention?"
+msgstr ""
+
+
+# 40x Context menu
+
+msgctxt "#30400"
+msgid "Play in another language"
+msgstr ""
+
+msgctxt "#30401"
+msgid "Shuffle this category"
+msgstr ""
+
+msgctxt "#30402"
+msgid "Shuffle in another language"
+msgstr ""
+
+# 41x Search page
+
+msgctxt "#30410"
+msgid "Audio clips"
+msgstr ""
+
+msgctxt "#30411"
+msgid "Page {} >"
 msgstr ""

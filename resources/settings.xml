@@ -1,18 +1,211 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <setting type="text" id="lang_name" default="English" enable="false" label="30010"/>
-    <setting type="action" action="RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=languages)" option="close" label="30011"/>
-    <!-- The order is backwards, but changing it would perhaps break setting with update -->
-    <setting type="enum" id="video_res" default="0" lvalues="30005|30004|30003|30002|30001" label="30000"/>
-    <setting type="bool" id="remember_lang" default="false" label="30026"/>
-    <setting type="bool" id="subtitles" default="false" label="30012"/>
-    <setting type="bool" id="startupmsg" default="true" label="30015"/>
+<?xml version="1.0" encoding="utf-8" ?>
+<settings version="1">
+    <section id="plugin.video.jwb-unofficial">
+        <category id="general" label="30200">
 
-    <!-- Values, history, cache -->
-    <setting type="text" id="language" default="E" visible="false"/>
-    <!-- Note: history needs to be empty by default to trigger a first time setup -->
-    <setting type="text" id="lang_history" default="" visible="false"/>
-    <setting type="text" id="lang_next" default="" visible="false"/>
-    <setting type="text" id="jwt_token" default="" visible="false"/>
-    <setting type="text" id="search_tr" default="" visible="false"/>
+            <!-- General group -->
+            <group id="0">
+
+                <!-- Video resolution -->
+                <setting id="video_resolution" type="integer" label="30000" help="30001">
+                    <level>0</level>
+                    <default>1080</default>
+                    <constraints>
+                        <options>
+                            <option label="30002">240</option>
+                            <option label="30003">360</option>
+                            <option label="30004">480</option>
+                            <option label="30005">720</option>
+                            <option label="30006">1080</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+
+                <!-- Subtitle visibility -->
+                <setting id="subtitle_mode" type="integer" label="30010" help="30011">
+                    <level>0</level>
+                    <default>2</default>
+                    <constraints>
+                        <options>
+                            <option label="30012">0</option> <!-- off -->
+                            <option label="30013">1</option> <!-- on -->
+                            <option label="30014">2</option> <!-- original audio and foreign -->
+                            <option label="30015">3</option> <!-- foreign -->
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+
+                <!-- First language 1) button 2) code 3) name -->
+                <setting id="select_language" type="action" label="30030" help="30031">
+                    <level>0</level>
+                    <data>RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=langlist&amp;set_lang1=1)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+                <setting id="language" type="string">
+                    <default>E</default>
+                    <visible>false</visible>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="lang_name" type="string">
+                    <level>0</level>
+                    <enable>false</enable>
+                    <default>English</default>
+                    <control type="edit" format="string"/>
+                </setting>
+
+            </group>
+
+            <!-- Second language group -->
+            <group id="1" label="30201">
+
+                <!-- Second language as audio -->
+                <setting id="original_audio" type="boolean" label="30034" help="30035">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+
+                <!-- Second language as fallback -->
+                <setting id="enable_fallback" type="boolean" label="30036" help="30037">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+
+                <!-- Second language -->
+                <setting id="select_second_language" type="action" label="30032" help="30033">
+                    <level>1</level>
+                    <data>RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=langlist&amp;set_lang2=1)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition setting="enable_fallback">true</condition>
+                                <condition setting="original_audio">true</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                </setting>
+                <setting id="second_language" type="string">
+                    <visible>false</visible>
+                    <default>E</default>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="second_language_name" type="string">
+                    <level>1</level>
+                    <default>English</default>
+                    <enable>false</enable>
+                    <control type="edit" format="string"/>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition setting="enable_fallback">true</condition>
+                                <condition setting="original_audio">true</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                </setting>
+
+            </group>
+
+            <!-- Other group -->
+            <group id="2" label="30202">
+
+                <!-- Disclaimer -->
+                <setting id="show_disclaimer" type="action" label="30052" help="30053">
+                    <level>1</level>
+                    <data>RunPlugin(plugin://plugin.video.jwb-unofficial/?mode=disclaimer)</data>
+                    <control type="button" format="action">
+                        <close>false</close>
+                    </control>
+                </setting>
+
+                <!-- First run -->
+                <setting id="startupmsg" type="boolean">
+                    <visible>false</visible>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+
+                <!-- Space separated language code history -->
+                <setting id="lang_history" type="string">
+                    <visible>false</visible>
+                    <default/>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
+                <!-- When playing one or more videos in another language, the code is stored here temporarily -->
+                <setting id="lang_next" type="string">
+                    <visible>false</visible>
+                    <default/>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
+                <!-- Cached authentication token for search -->
+                <setting id="jwt_token" type="string">
+                    <visible>false</visible>
+                    <default/>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
+                <!-- Cached translation of the Search button -->
+                <setting id="search_tr" type="string">
+                    <visible>false</visible>
+                    <default>Search</default>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
+                <!-- Last used settings version, 0 = first run or addon upgraded from version 1.x -->
+                <setting id="settings_version" type="integer">
+                    <visible>false</visible>
+                    <default>0</default>
+                    <control type="edit" format="integer"/>
+                </setting>
+
+                <!-- Last used addon version, used for What's new popups -->
+                <setting id="last_used_version" type="string">
+                    <visible>false</visible>
+                    <default/>
+                    <constraints><allowempty>true</allowempty></constraints>
+                    <control type="edit" format="string"/>
+                </setting>
+
+                <!-- Deprecated settings -->
+                <!-- Kept to avoid log warnings and to assert that settings migration works as intended -->
+                <!-- I could write an XML pruning function, but this is easier -->
+
+                <!-- Legacy resolution enum 0=1080, 1=720, 2=480, 3=360, 4=240 -->
+                <setting id="video_res" type="integer">
+                    <visible>false</visible>
+                    <default>0</default>
+                    <control type="edit" format="integer"/>
+                </setting>
+
+                <!-- "Always use last selected language" -->
+                <setting id="remember_lang" type="boolean">
+                    <visible>false</visible>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+
+                <!-- "Display subtitles by default" -->
+                <setting id="subtitles" type="boolean">
+                    <visible>false</visible>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+
+            </group>
+        </category>
+    </section>
 </settings>
