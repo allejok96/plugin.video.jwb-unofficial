@@ -1,3 +1,6 @@
+import re
+from typing import Tuple
+
 from resources.lib.kodi import kodi
 from resources.lib.settings import settings
 
@@ -15,8 +18,18 @@ NEWS = """
 """
 
 
+def _parse_version(version: str) -> Tuple[int, ...]:
+    """Turn '2.10.1' into (2, 10, 1) so it can be compared numerically
+
+    Anything after the numeric part (like '~beta1' or '+matrix.1') is ignored.
+    An empty or invalid string gives (), which is lower than any version.
+    """
+    match = re.match(r'\d+(\.\d+)*', version)
+    return tuple(int(n) for n in match.group().split('.')) if match else ()
+
+
 def show_whats_new() -> None:
-    if settings.last_used_version < VERSION:
+    if _parse_version(settings.last_used_version) < _parse_version(VERSION):
         kodi().text_dialog(f"New features in version {VERSION}", NEWS)
         mark_whats_new_as_shown()
 
