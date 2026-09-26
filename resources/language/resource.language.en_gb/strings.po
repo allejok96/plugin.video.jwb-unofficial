@@ -9,7 +9,7 @@ msgstr ""
 # 00x Resolution setting
 
 msgctxt "#30000"
-msgid "Video resolution"
+msgid "Max resolution"
 msgstr ""
 
 msgctxt "#30001"
@@ -44,7 +44,7 @@ msgid "Display subtitles for"
 msgstr ""
 
 msgctxt "#30011"
-msgid "Languages that will have subtitles by default"
+msgid "When to display subtitles"
 msgstr ""
 
 msgctxt "#30012"
@@ -56,7 +56,7 @@ msgid "All languages"
 msgstr ""
 
 msgctxt "#30014"
-msgid "Original audio or foreign languages"
+msgid "Original audio and foreign languages"
 msgstr ""
 
 msgctxt "#30015"
@@ -79,7 +79,7 @@ msgid "Change original language..."
 msgstr ""
 
 msgctxt "#30033"
-msgid "Change original audio and fallback language"
+msgid "Change original audio / fallback language"
 msgstr ""
 
 msgctxt "#30034"
