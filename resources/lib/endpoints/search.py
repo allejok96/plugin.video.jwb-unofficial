@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 from resources.lib.jwlib.search import ResultPage, search
@@ -8,18 +9,6 @@ from resources.lib.jwgui import create_search_result
 from resources.lib.kodi import kodi, ListItem, ItemType
 from resources.lib.settings import settings
 from resources.lib.translations import *
-
-
-def _show_search_box():
-    query = kodi().input_dialog()
-    if query:
-        _execute_search_request(query)
-
-
-def _execute_search_request(query: str) -> None:
-    # When we want to open a folder we must use ActivateWindow, not RunPlugin
-    # (RunAddon can do this too, but it's a poorly documented feature)
-    kodi().execute('ActivateWindow(Videos, ' + SearchRequest(q=query).url + ')')
 
 
 def _create_audio_button(query: str) -> ListItem:
@@ -75,13 +64,30 @@ def _build_screen(page: ResultPage):
 def search_endpoint(request: SearchRequest):
     """API endpoint that shows a search box or a list of search results"""
 
-    if request.q:
-        _build_screen(
-            _get_result_from_query(request.q, request.audio)
-        )
-    elif request.page:
+    if request.page:
         _build_screen(
             _get_result_from_url(request.page)
         )
+
     else:
-        _show_search_box()
+
+        # Note to self:
+        # I tried experimenting with having the dialog box call either of these things when OK is pressed:
+        # - ActivateWindow(Videos, plugin://plugin.video.jwb-unofficial?mode=search&q=query)
+        # - RunAddon(plugin.video.jwb-unofficial, mode=search&q=query)
+        #   (RunAddon opens a folder view, RunPlugin just executes in the background... I think)
+        # But neither seems to work because it can't switch window when there's a modal dialog on top.
+        # So the easy solution is just to open the search page like a directory and let it block until
+        # the user has typed a query.
+
+        search_term = request.q or kodi().input_dialog()
+
+        if search_term:
+            _build_screen(
+                _get_result_from_query(search_term, request.audio)
+            )
+        else:
+            # If kodi().add_items() is never called, it will fail to open the directory with
+            # GetDirectory(plugin://plugin.video.jwb-unofficial/?mode=search) failed
+            # and this is exactly what we want if the user presses Cancel.
+            pass

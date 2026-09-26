@@ -33,29 +33,6 @@ def test_create_next_button(kodi):
     assert item.url == SearchRequest(page='https://example.org/next').url
 
 
-def test_show_search_box_with_query(kodi):
-    kodi.user_string = 'cats'
-
-    search._show_search_box()
-
-    kodi.executed_commands = ['ActivateWindow(Videos, ' + SearchRequest(q='cats').url + ')']
-
-
-
-def test_show_search_box_empty_query(kodi):
-    kodi.user_string = ''
-
-    search._show_search_box()
-
-    assert kodi.executed_commands == []
-
-
-def test_execute_search_request(kodi):
-    search._execute_search_request('dogs')
-
-    assert kodi.executed_commands == ['ActivateWindow(Videos, ' + SearchRequest(q='dogs').url + ')']
-
-
 def test_get_result_from_query(kodi, monkeypatch):
     page = make_result_page()
     captured = {}
@@ -132,11 +109,22 @@ def test_build_screen_includes_next_button(kodi):
 
 def test_search_endpoint_with_query(kodi, monkeypatch):
     page = make_result_page()
-    monkeypatch.setattr(search, '_get_result_from_query', lambda q, audio: page)
+    captured = {}
 
-    search.search_endpoint(SearchRequest(q='cats'))
+    def fake_get_result_from_query(q, audio):
+        captured['args'] = (q, audio)
+        return page
+
+    def fail_input_dialog():
+        raise AssertionError('Search box should not be shown when query is given')
+
+    monkeypatch.setattr(search, '_get_result_from_query', fake_get_result_from_query)
+    monkeypatch.setattr(kodi, 'input_dialog', fail_input_dialog)
+
+    search.search_endpoint(SearchRequest(q='cats', audio=True))
 
     assert kodi.screen_items
+    assert captured['args'] == ('cats', True)
 
 
 def test_search_endpoint_with_page(kodi, monkeypatch):
@@ -156,10 +144,32 @@ def test_search_endpoint_with_page(kodi, monkeypatch):
     assert captured['url'] == request.page
 
 
-def test_search_endpoint_shows_search_box(kodi):
+@pytest.mark.parametrize('audio', [False, True])
+def test_search_endpoint_shows_search_box(kodi, monkeypatch, audio):
+    page = make_result_page()
+    captured = {}
 
-    with pytest.raises(AttributeError):
-        search.search_endpoint(SearchRequest())
+    def fake_get_result_from_query(q, audio):
+        captured['args'] = (q, audio)
+        return page
 
+    monkeypatch.setattr(search, '_get_result_from_query', fake_get_result_from_query)
+    kodi.user_string = 'dogs'
+
+    search.search_endpoint(SearchRequest(audio=audio))
+
+    assert kodi.screen_items
+    assert captured['args'] == ('dogs', audio)
+
+
+def test_search_endpoint_search_box_cancelled(kodi, monkeypatch):
+    def fail_get_result_from_query(q, audio):
+        raise AssertionError('Should not search when user cancels')
+
+    monkeypatch.setattr(search, '_get_result_from_query', fail_get_result_from_query)
     kodi.user_string = ''
+
     search.search_endpoint(SearchRequest())
+
+    # add_items() must never be called, so that Kodi fails to open the directory
+    assert not hasattr(kodi, 'screen_items')
