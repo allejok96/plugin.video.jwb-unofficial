@@ -1,12 +1,11 @@
-import time
 from typing import List
 
 from resources.lib.jwlib.search import ResultPage, search
 from resources.lib.jwlib.search.const import FILTER_AUDIO, FILTER_VIDEO
 
-from resources.lib.requests import SearchRequest
 from resources.lib.jwgui import create_search_result
 from resources.lib.kodi import kodi, ListItem, ItemType
+from resources.lib.requests import SearchRequest
 from resources.lib.settings import settings
 from resources.lib.translations import *
 
@@ -71,15 +70,15 @@ def search_endpoint(request: SearchRequest):
 
     else:
 
-        # Note to self:
+        # TODO pressing OK should open a new page
+        # The easy design is to open the search page like a directory and let it block until
+        # the user has typed a query. This has a drawback: when the user navigates back from the second page,
+        # Kodi may reload page 1 and open the keyboard again... I don't know how to fix that.
         # I tried experimenting with having the dialog box call either of these things when OK is pressed:
         # - ActivateWindow(Videos, plugin://plugin.video.jwb-unofficial?mode=search&q=query)
         # - RunAddon(plugin.video.jwb-unofficial, mode=search&q=query)
         #   (RunAddon opens a folder view, RunPlugin just executes in the background... I think)
         # But neither seems to work because it can't switch window when there's a modal dialog on top.
-        # So the easy solution is just to open the search page like a directory and let it block until
-        # the user has typed a query.
-
         search_term = request.q or kodi().input_dialog()
 
         if search_term:
