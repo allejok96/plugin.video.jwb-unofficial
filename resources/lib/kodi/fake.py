@@ -118,7 +118,7 @@ class FakeKodiInterface(KodiInterface):
         return self.user_choice
 
     def text_dialog(self, title: str, message: str) -> None:
-        self.dialog_messages.append(title)
+        self.dialog_messages.append(f'{title}: {message}')
 
     #
     # Internals

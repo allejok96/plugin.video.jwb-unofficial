@@ -21,7 +21,7 @@ def test_create_category_item(session):
     assert item.url == BrowseRequest(category='A', hidden=False, media=False).url
     assert item.menu == [
         ('STRING #30401', ShuffleRequest(category='A', hidden=False).url),
-        ('STRING #30400', LanguageRequest(shuffle_category='A', hidden=False).url),
+        ('STRING #30402', LanguageRequest(shuffle_category='A', hidden=False).url),
     ]
 
 
@@ -135,4 +135,4 @@ def test_create_search_result_uses_deep_links():
 def test_show_disclaimer(kodi):
     jwgui.show_disclaimer()
 
-    assert kodi.dialog_messages == ['STRING #30310']
+    assert kodi.dialog_messages == ['STRING #30310: STRING #30311']

@@ -13,6 +13,7 @@ Hidden_item = 30320
 Have_you_attended_the_convention = 30320
 Play_in_another_language = 30400
 Shuffle_this_category = 30401
+Shuffle_in_another_language = 30402
 Audio_clips = 30410
 Next_page = 30411
 

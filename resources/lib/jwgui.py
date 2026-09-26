@@ -28,7 +28,7 @@ def create_category_item(c: Category, *, fanart=None) -> ListItem:
         fanart=fanart,
         menu=[
             (tr(Shuffle_this_category), ShuffleRequest(category=c.key, hidden=hidden).url),
-            (tr(Play_in_another_language), LanguageRequest(shuffle_category=c.key, hidden=hidden).url)
+            (tr(Shuffle_in_another_language), LanguageRequest(shuffle_category=c.key, hidden=hidden).url)
         ],
         type=ItemType.FOLDER,
         url=BrowseRequest(category=c.key, hidden=hidden, media=_has_media(c)).url,
@@ -95,10 +95,7 @@ def create_search_result(r: Result) -> ListItem:
 
 
 def show_disclaimer():
-    """Show theocratic warning popup
-
-    TODO move this to other module?
-    """
+    """Show theocratic warning popup"""
     kodi().text_dialog(tr(Theocratic_warning), tr(Full_disclaimer))
 
 

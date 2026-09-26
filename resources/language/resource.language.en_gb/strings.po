@@ -179,6 +179,9 @@ msgctxt "#30401"
 msgid "Shuffle this category"
 msgstr ""
 
+msgctxt "#30402"
+msgid "Shuffle in another language"
+msgstr ""
 
 # 41x Search page
 

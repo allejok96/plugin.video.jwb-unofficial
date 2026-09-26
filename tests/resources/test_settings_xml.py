@@ -32,7 +32,7 @@ def test_commands_in_settings(kodi, session) -> None:
         addon.main()
 
     # We should have gotten the theocratic warning on the last one
-    assert kodi.dialog_messages == ['STRING #30310']
+    assert kodi.dialog_messages[-1] == 'STRING #30310: STRING #30311'
 
 
 def test_setting_ids_and_types(kodi):
