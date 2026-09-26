@@ -188,6 +188,9 @@ class RealKodiInterface(KodiInterface):
         kb.doModal()
         return kb.getText() if kb.isConfirmed() else ''
 
+    def ok_dialog(self, title: str, message: str) -> bool:
+        return xbmcgui.Dialog().ok(title, message)
+
     def question_dialog(self, title: str, message: str) -> bool:
         return xbmcgui.Dialog().yesno(title, message)
 

@@ -135,6 +135,10 @@ class KodiInterface(ABC):
         ...
 
     @abstractmethod
+    def ok_dialog(self, title: str, message: str) -> bool:
+        ...
+
+    @abstractmethod
     def question_dialog(self, title: str, message: str) -> bool:
         ...
 

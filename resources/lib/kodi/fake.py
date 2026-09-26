@@ -111,6 +111,10 @@ class FakeKodiInterface(KodiInterface):
     def input_dialog(self) -> str:
         return self.user_string
 
+    def ok_dialog(self, title: str, message: str) -> bool:
+        self.dialog_messages.append(f'{title}: {message}')
+        return True
+
     def question_dialog(self, title: str, message: str) -> bool:
         return self.user_bool
 
