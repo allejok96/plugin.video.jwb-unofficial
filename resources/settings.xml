@@ -165,14 +165,14 @@
                     <control type="edit" format="string"/>
                 </setting>
 
-                <!-- Settings version, 0 = first run or addon migrated from old version -->
-                <setting id="last_settings_version" type="integer">
+                <!-- Last used settings version, 0 = first run or addon upgraded from version 1.x -->
+                <setting id="settings_version" type="integer">
                     <visible>false</visible>
                     <default>0</default>
                     <control type="edit" format="integer"/>
                 </setting>
 
-                <!-- Used for What's new popups -->
+                <!-- Last used addon version, used for What's new popups -->
                 <setting id="last_used_version" type="string">
                     <visible>false</visible>
                     <default/>

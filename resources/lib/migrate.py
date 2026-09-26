@@ -92,13 +92,7 @@ def migrate_settings() -> bool:
     """Migrate settings and return success"""
 
     current_settings_version = len(_upgrade_routines)
-
-    try:
-        last_settings_version = settings.settings_version
-    except Exception as e:
-        logger.info('Failed to read settings version', exc_info=e)
-        settings.settings_version = current_settings_version
-        return False
+    last_settings_version = settings.settings_version
 
     if last_settings_version >= current_settings_version:
         return True

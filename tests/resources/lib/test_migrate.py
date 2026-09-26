@@ -106,14 +106,6 @@ class TestUpgradeSubtitles:
         assert settings.subtitle_mode == SubtitleMode.ON
 
 
-class TestLastVersion:
-    def test_roundtrip(self, kodi):
-        migrate._set_last_version(5)
-
-        assert kodi.get_setting('last_settings_version') == '5'
-        assert migrate._get_last_version() == 5
-
-
 class TestMigrateSettings:
     def test_fresh_install_runs_all_routines_in_order_and_bumps_version(self, kodi, monkeypatch):
         calls = []
@@ -122,12 +114,12 @@ class TestMigrateSettings:
             (lambda: calls.append(1), 'one'),
             (lambda: calls.append(2), 'two'),
         ])
-        assert kodi.get_setting('last_settings_version') == '0'  # default
+        assert kodi.get_setting('settings_version') == '0'  # default
 
         result = migrate_settings()
 
         assert calls == [0, 1, 2]
-        assert kodi.get_setting('last_settings_version') == '3'
+        assert settings.settings_version == 3
         assert result is True
 
     def test_only_runs_routines_after_last_migrated_version(self, kodi, monkeypatch):
@@ -137,12 +129,12 @@ class TestMigrateSettings:
             (lambda: calls.append(1), 'one'),
             (lambda: calls.append(2), 'two'),
         ])
-        kodi.settings['last_settings_version'] = '1'
+        settings.settings_version = 1
 
         result = migrate_settings()
 
         assert calls == [1, 2]
-        assert kodi.get_setting('last_settings_version') == '3'
+        assert settings.settings_version == 3
         assert result is True
 
     def test_skips_entirely_when_already_up_to_date(self, kodi, monkeypatch):
@@ -150,12 +142,12 @@ class TestMigrateSettings:
         monkeypatch.setattr(migrate, '_upgrade_routines', [
             (lambda: calls.append(0), 'zero'),
         ])
-        kodi.settings['last_settings_version'] = '1'
+        kodi.settings['settings_version'] = '1'
 
         result = migrate_settings()
 
         assert calls == []
-        assert kodi.get_setting('last_settings_version') == '1'  # left untouched
+        assert settings.settings_version == 1  # left untouched
         assert result is True
 
     def test_failed_routine_is_logged_but_version_still_bumped(self, kodi, monkeypatch, caplog):
@@ -171,15 +163,6 @@ class TestMigrateSettings:
             result = migrate_settings()
 
         assert calls == [1]  # later routines still run
-        assert kodi.get_setting('last_settings_version') == '2'
+        assert kodi.get_setting('settings_version') == '2'
         assert result is False
         assert ('resources.lib.migrate', logging.INFO, 'boom - failed') in caplog.record_tuples
-
-    def test_failure_to_read_version_is_treated_as_a_failed_migration(self, kodi, monkeypatch, caplog):
-        monkeypatch.setattr(migrate, '_get_last_version', lambda: (_ for _ in ()).throw(ValueError))
-
-        with caplog.at_level(logging.DEBUG):
-            result = migrate_settings()
-
-        assert result is False
-        assert kodi.get_setting('last_settings_version') == str(len(migrate._upgrade_routines))
