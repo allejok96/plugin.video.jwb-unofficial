@@ -1,3 +1,5 @@
+THIS IS A CI TEST
+
 Unofficial JW Broadcasting plugin for Kodi
 ==========================================
 
