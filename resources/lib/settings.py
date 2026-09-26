@@ -111,6 +111,14 @@ class Settings:
         return kodi().get_setting('second_language')
 
     @property
+    def settings_version(self) -> int:
+        return int(kodi().get_setting('last_settings_version'))
+
+    @settings_version.setter
+    def settings_version(self, value: int):
+        kodi().set_setting('last_settings_version', str(value))
+
+    @property
     def subtitle_mode(self) -> SubtitleMode:
         return SubtitleMode(int(kodi().get_setting('subtitle_mode')))
 

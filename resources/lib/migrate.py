@@ -88,31 +88,25 @@ _upgrade_routines: List[Tuple[Callable[[], None], str]] = [
 ]
 
 
-def _get_last_version() -> int:
-    return int(kodi().get_setting('last_settings_version'))
-
-
-def _set_last_version(val: int) -> None:
-    kodi().set_setting('last_settings_version', str(val))
-
-
 def migrate_settings() -> bool:
     """Migrate settings and return success"""
 
+    current_settings_version = len(_upgrade_routines)
+
     try:
-        last_upgrade_routine_count = _get_last_version()
+        last_settings_version = settings.settings_version
     except Exception as e:
         logger.info('Failed to read settings version', exc_info=e)
-        _set_last_version(len(_upgrade_routines))
+        settings.settings_version = current_settings_version
         return False
 
-    if last_upgrade_routine_count >= len(_upgrade_routines):
+    if last_settings_version >= current_settings_version:
         return True
 
-    logger.info(f'Starting settings migration {last_upgrade_routine_count} => {len(_upgrade_routines)}')
+    logger.info(f'Starting settings migration {last_settings_version} => {len(_upgrade_routines)}')
 
     success = True
-    for i in range(last_upgrade_routine_count, len(_upgrade_routines)):
+    for i in range(last_settings_version, current_settings_version):
         routine, description = _upgrade_routines[i]
         logger.info(description)
         try:
@@ -121,7 +115,7 @@ def migrate_settings() -> bool:
             logger.info(f'{description} - failed', exc_info=e)
             success = False
 
-    _set_last_version(len(_upgrade_routines))
+    settings.settings_version = current_settings_version
     logger.info(f'Settings migration finished')
 
     return success
