@@ -81,7 +81,8 @@ def _set_info_labels(li: xbmcgui.ListItem, source: ListItem) -> None:
 def kodi_item(item: ListItem) -> xbmcgui.ListItem:
     """Convert adapter ListItem to native ListItem"""
 
-    li = xbmcgui.ListItem(item.title)
+    # offscreen=True turns off repaint callbacks for the list item's setters, which makes things much faster
+    li = xbmcgui.ListItem(item.title, offscreen=True)
 
     # All Kodi's setter functions can be kinda slow, so make sure we have a value before calling them
 

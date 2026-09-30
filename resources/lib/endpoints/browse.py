@@ -18,6 +18,24 @@ def browse_endpoint(request: BrowseRequest) -> None:
     if _is_unseen_convention(request.category):
         return
 
+    # Note to self:
+    # After profiling this on a RPi2 with OSMC (Kodi 21.3)
+    # (and after manually creating __pycache__ files in /usr which was causing a big delay every time)
+    # This is when opening the biggest category with 383 items:
+    #
+    # 1600 ms open URL
+    #  880 ms load JSON
+    #  420 ms jwlib create dataclasses
+    #  210 ms create list items / Request.url / asdict
+    #  145 ms create list items / Request.url / urlencode
+    #  145 ms create list items / other
+    #  145 ms add items to Kodi
+    #
+    # The new jwlib is quite inefficient since it creates all instances when loaded.
+    # The Request is also quite slow... Dataclasses are costing us 775 ms in the worst scenario.
+    # I'm not sure that's worth optimizing, considering it just a single button press on a Pi,
+    # and we'd lose some of the tidiness of dataclass design.
+    #
     subcategories, media = get_content_multilanguage(
         category=request.category,
         languages=[settings.language, settings.fallback_language],
