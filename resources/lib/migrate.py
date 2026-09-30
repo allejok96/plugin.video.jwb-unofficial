@@ -94,6 +94,12 @@ def migrate_settings() -> bool:
     current_settings_version = len(_upgrade_routines)
     last_settings_version = settings.settings_version
 
+    # Skip migration (now and future) if this is the first run
+    if settings.first_run:
+        settings.settings_version = current_settings_version
+        return True
+
+    # Skip migration if the settings version is up to date
     if last_settings_version >= current_settings_version:
         return True
 

@@ -107,14 +107,29 @@ class TestUpgradeSubtitles:
 
 
 class TestMigrateSettings:
-    def test_fresh_install_runs_all_routines_in_order_and_bumps_version(self, kodi, monkeypatch):
+    def test_fresh_install_skips_migration_but_updates_settings_version(self, kodi, monkeypatch):
+        calls = []
+        monkeypatch.setattr(migrate, '_upgrade_routines', [
+            (lambda: calls.append(0), 'zero'),
+        ])
+
+        assert settings.settings_version == 0 # default
+
+        result = migrate_settings()
+
+        assert calls == []
+        assert settings.settings_version == 1
+        assert result is True
+
+    def test_upgrade_from_v1_runs_all_routines_in_order_and_bumps_version(self, kodi, monkeypatch):
         calls = []
         monkeypatch.setattr(migrate, '_upgrade_routines', [
             (lambda: calls.append(0), 'zero'),
             (lambda: calls.append(1), 'one'),
             (lambda: calls.append(2), 'two'),
         ])
-        assert kodi.get_setting('settings_version') == '0'  # default
+        assert settings.settings_version == 0 # default
+        settings.first_run = False
 
         result = migrate_settings()
 
@@ -130,6 +145,7 @@ class TestMigrateSettings:
             (lambda: calls.append(2), 'two'),
         ])
         settings.settings_version = 1
+        settings.first_run = False
 
         result = migrate_settings()
 
@@ -142,7 +158,8 @@ class TestMigrateSettings:
         monkeypatch.setattr(migrate, '_upgrade_routines', [
             (lambda: calls.append(0), 'zero'),
         ])
-        kodi.settings['settings_version'] = '1'
+        settings.settings_version = 1
+        settings.first_run = False
 
         result = migrate_settings()
 
@@ -158,6 +175,8 @@ class TestMigrateSettings:
             (lambda: (_ for _ in ()).throw(RuntimeError('kaboom')), 'boom'),
             (lambda: calls.append(1), 'one'),
         ])
+
+        settings.first_run = False
 
         with caplog.at_level(logging.DEBUG):
             result = migrate_settings()
