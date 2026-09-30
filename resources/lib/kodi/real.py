@@ -159,6 +159,7 @@ class RealKodiInterface(KodiInterface):
         if _get_version() < 20:
             self.set_setting(key, 'true' if value else 'false')
         else:
+            logger.debug(f'Setting {key!r} => {value!r}')
             xbmcaddon.Addon().setSettingBool(key, value)
 
     #

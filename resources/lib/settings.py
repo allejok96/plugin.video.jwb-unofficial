@@ -18,7 +18,8 @@ def append_to_language_history(code):
         settings.language_history = history[0:5]
 
 
-def _get_search_translation(lang: str) -> str:
+def try_get_search_translation(lang: str) -> str:
+    """Get translation of the word "search" from jw.org - overkill but so cool"""
     try:
         return jwlib.get_session(lang).get_translations()['hdgSearch']
     except KeyError:
@@ -26,12 +27,6 @@ def _get_search_translation(lang: str) -> str:
     except Exception:
         logger.debug('Failed to fetch translated strings')
     return 'Search'
-
-
-def update_search_translation(lang: str):
-    """Get translation of the word "search" from jw.org - overkill but so cool"""
-
-    kodi().set_setting('search_tr', _get_search_translation(lang))
 
 
 class SubtitleMode(Enum):
@@ -106,6 +101,10 @@ class Settings:
     def search_label(self) -> str:
         return kodi().get_setting('search_tr')
 
+    @search_label.setter
+    def search_label(self, value: str):
+        kodi().set_setting('search_tr', value)
+
     @property
     def second_language(self) -> str:
         return kodi().get_setting('second_language')
@@ -147,7 +146,7 @@ class Settings:
     def set_language(self, code: str, name: str):
         kodi().set_setting('language', code)
         kodi().set_setting('lang_name', name)
-        update_search_translation(code)
+        self.search_label = try_get_search_translation(code)
 
     def set_second_language(self, code: str, name: str):
         kodi().set_setting('second_language', code)

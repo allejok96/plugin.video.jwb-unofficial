@@ -17,8 +17,7 @@ class TestUpgradeVideoRes:
 
         assert settings.resolution == 1080  # matches the default of video_resolution
         assert caplog.record_tuples == [
-            ('resources.lib.migrate', logging.INFO, 'Old value: 0'),
-            ('resources.lib.migrate', logging.INFO, 'New value: 1080'),
+            ('resources.lib.migrate', logging.INFO, "'video_res' was 0"),
         ]
 
     @pytest.mark.parametrize('old_res, expected', [(1, 720), (2, 480), (3, 360), (4, 240)])
